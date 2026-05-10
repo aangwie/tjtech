@@ -7,26 +7,28 @@
 @section('content')
 
     <div x-data="{ 
-                                    showCreateModal: false, 
-                                    showGenerateModal: false,
-                                    showPayModal: false,
-                                    showDeleteModal: false,
-                                    showDueDateModal: false,
-                                    selectedInvoices: [],
-                                    toggleAll() {
-                                        if (this.selectedInvoices.length === {{ count($invoices->where('status', 'unpaid')) }}) {
-                                            this.selectedInvoices = [];
-                                        } else {
-                                            this.selectedInvoices = [
-                                                @foreach($invoices as $inv)
-                                                    @if($inv->status == 'unpaid')
-                                                        {{ $inv->id }},
-                                                    @endif
-                                                @endforeach
-                                            ];
+                                        showCreateModal: false, 
+                                        showGenerateModal: false,
+                                        showPayModal: false,
+                                        showDeleteModal: false,
+                                        showDueDateModal: false,
+                                        showDeleteModal: false,
+                                        showDueDateModal: false,
+                                        selectedInvoices: [],
+                                        toggleAll() {
+                                            if (this.selectedInvoices.length === {{ count($invoices->where('status', 'unpaid')) }}) {
+                                                this.selectedInvoices = [];
+                                            } else {
+                                                this.selectedInvoices = [
+                                                    @foreach($invoices as $inv)
+                                                        @if($inv->status == 'unpaid')
+                                                            {{ $inv->id }},
+                                                        @endif
+                                                    @endforeach
+                                                ];
+                                            }
                                         }
-                                    }
-                                }">
+                                    }">
 
         <!-- Filter Bar -->
         <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -171,7 +173,7 @@
                             Bulan/Tahun</th>
                         <th
                             class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">
-                            Total</th>
+                            Tagihan</th>
                         <th
                             class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">
                             Status</th>
@@ -219,9 +221,14 @@
                                             <span class="h-3 w-3 rounded-full bg-green-500" title="Lunas" alt="Lunas"></span>
                                         </div>
                                     @else
-                                        <div class="flex items-center justify-center">
+                                        <div class="flex flex-col items-center justify-center gap-1">
                                             <span class="h-3 w-3 rounded-full bg-red-500" title="Belum Bayar"
                                                 alt="Belum Bayar"></span>
+                                            @if($inv->underpayment > 0)
+                                                <span class="text-[10px] text-orange-500 font-semibold whitespace-nowrap">
+                                                    Kurang: Rp {{ number_format($inv->underpayment, 0, ',', '.') }}
+                                                </span>
+                                            @endif
                                         </div>
                                     @endif
                                 </td>
@@ -233,30 +240,25 @@
                                             <i class="fas fa-print"></i>
                                         </a>
                                         @if($inv->status == 'unpaid')
-                                            <form action="{{ route('billing.pay', $inv->id) }}" method="POST" class="d-inline"
-                                                onsubmit="return confirm('Tandai invoice ini sebagai LUNAS?');">
-                                                @csrf
-                                                <button
-                                                    class="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md transition-colors"
-                                                    title="Bayar Manual">
-                                                    <i class="fas fa-check-double"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button"
+                                                onclick="openSweetAlertPayment({{ $inv->id }})"
+                                                class="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md transition-colors"
+                                                title="Bayar Manual">
+                                                <i class="fas fa-check-double"></i>
+                                            </button>
                                         @else
-                                            <form action="{{ route('billing.cancel', $inv->id) }}" method="POST" class="d-inline"
-                                                onsubmit="return confirm('Batalkan pembayaran ini? Status akan kembali menjadi UNPAID.');">
+                                            <form id="form-cancel-{{ $inv->id }}" action="{{ route('billing.cancel', $inv->id) }}" method="POST" class="inline-block m-0 p-0">
                                                 @csrf
-                                                <button
+                                                <button type="button" onclick="confirmCancel({{ $inv->id }})"
                                                     class="p-1.5 text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-md transition-colors"
                                                     title="Batalkan Bayar">
                                                     <i class="fas fa-undo"></i>
                                                 </button>
                                             </form>
                                         @endif
-                                        <form action="{{ route('billing.destroy', $inv->id) }}" method="POST" class="d-inline"
-                                            onsubmit="return confirm('Hapus Invoice ini permanen?');">
+                                        <form id="form-delete-{{ $inv->id }}" action="{{ route('billing.destroy', $inv->id) }}" method="POST" class="inline-block m-0 p-0">
                                             @csrf @method('DELETE')
-                                            <button
+                                            <button type="button" onclick="confirmDelete({{ $inv->id }})"
                                                 class="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                                                 title="Hapus Invoice">
                                                 <i class="fas fa-trash-alt"></i>
@@ -303,7 +305,8 @@
                                                 class="mt-1 block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 ring-1 ring-inset ring-slate-300 dark:ring-slate-600 sm:text-sm">
                                                 @for($i = 1; $i <= 12; $i++)
                                                     <option value="{{ $i }}" {{ date('n') == $i ? 'selected' : '' }}>
-                                                        {{ DateTime::createFromFormat('!m', $i)->format('F') }}</option>
+                                                        {{ DateTime::createFromFormat('!m', $i)->format('F') }}
+                                                    </option>
                                                 @endfor
                                             </select>
                                         </div>
@@ -652,7 +655,6 @@
                     </div>
                 </div>
             </div>
-        </div>
     </div>
 
 @endsection
@@ -766,7 +768,7 @@
                 }
             @endif
 
-                            if (!dueDate) {
+                                if (!dueDate) {
                 alert('Pilih tanggal jatuh tempo!');
                 return;
             }
@@ -913,5 +915,205 @@
             $('#payDone').show();
             $('#paySummaryText').text(`Selesai: ${success} Sukses, ${skipped} Dilewati, ${error} Gagal.`);
         }
+        // === SWEETALERT2 SINGLE PAYMENT LOGIC ===
+        function openSweetAlertPayment(invoiceId) {
+            Swal.fire({
+                title: 'Memuat data...',
+                text: 'Silakan tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Fetch invoice info
+            $.ajax({
+                url: `/billing/${invoiceId}/info`,
+                method: 'GET',
+                success: function(data) {
+                    Swal.close();
+
+                    let htmlContent = `
+                        <div class="text-left mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+                            <div class="flex justify-between mb-1"><span class="text-gray-500">Pelanggan:</span> <span class="font-semibold">${data.customer_name}</span></div>
+                            <div class="flex justify-between mb-1"><span class="text-gray-500">Tagihan:</span> <span class="font-bold text-red-600">${data.price_formatted}</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Saldo:</span> <span class="${data.balance_sufficient ? 'text-green-600 font-bold' : 'text-gray-600'}">${data.balance_formatted}</span></div>
+                        </div>
+
+                        <div class="mb-4 text-left">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Metode Pembayaran</label>
+                            <div class="flex flex-col gap-2">
+                                <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="swal_pay_method" value="manual" class="w-4 h-4 text-blue-600 focus:ring-blue-500" checked onchange="toggleSwalPayMethod()">
+                                    <span class="ml-2 font-medium text-gray-700">Bayar Manual</span>
+                                </label>
+                                <label class="flex items-center p-3 border rounded-lg ${!data.balance_sufficient ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'}">
+                                    <input type="radio" name="swal_pay_method" value="balance" class="w-4 h-4 text-blue-600 focus:ring-blue-500" ${!data.balance_sufficient ? 'disabled' : ''} onchange="toggleSwalPayMethod()">
+                                    <span class="ml-2 font-medium text-gray-700">Pakai Saldo</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="swal_amount_container" class="text-left">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Pembayaran (Rp)</label>
+                            <input type="number" id="swal_amount" class="swal2-input !m-0 w-full" value="${data.price}" style="height: 40px; font-size: 1rem;">
+                            <p class="text-xs text-orange-600 mt-1 hidden" id="swal_underpayment_warning">Jika bayar kurang, sisa akan diakumulasi ke bulan depan.</p>
+                        </div>
+                    `;
+
+                    Swal.fire({
+                        title: 'Proses Pembayaran',
+                        html: htmlContent,
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-check"></i> Proses',
+                        cancelButtonText: 'Batal',
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        focusConfirm: false,
+                        didOpen: () => {
+                            // Add event listener for amount to show warning
+                            const amountInput = document.getElementById('swal_amount');
+                            const warningText = document.getElementById('swal_underpayment_warning');
+                            amountInput.addEventListener('input', function() {
+                                if (parseFloat(this.value) < data.price) {
+                                    warningText.classList.remove('hidden');
+                                } else {
+                                    warningText.classList.add('hidden');
+                                }
+                            });
+                        },
+                        preConfirm: () => {
+                            const method = document.querySelector('input[name="swal_pay_method"]:checked').value;
+                            let amount = 0;
+                            
+                            if (method === 'manual') {
+                                amount = document.getElementById('swal_amount').value;
+                                if (!amount || amount <= 0) {
+                                    Swal.showValidationMessage('Jumlah pembayaran tidak valid');
+                                    return false;
+                                }
+                            } else {
+                                amount = data.price;
+                            }
+
+                            return { method: method, amount: parseFloat(amount) };
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            processSweetAlertPayment(invoiceId, result.value.method, result.value.amount);
+                        }
+                    });
+                },
+                error: function() {
+                    Swal.fire('Error', 'Gagal memuat data invoice', 'error');
+                }
+            });
+        }
+
+        // Global toggle helper for sweetalert content
+        window.toggleSwalPayMethod = function() {
+            const method = document.querySelector('input[name="swal_pay_method"]:checked').value;
+            const container = document.getElementById('swal_amount_container');
+            if (method === 'manual') {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        };
+
+        function processSweetAlertPayment(invoiceId, method, amount) {
+            Swal.fire({
+                title: 'Memproses...',
+                text: 'Mohon tunggu',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: `/billing/${invoiceId}/pay-method`,
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                data: JSON.stringify({
+                    payment_method: method,
+                    amount_paid: amount
+                }),
+                contentType: 'application/json',
+                success: function(res) {
+                    if (res.status === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: res.message,
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else if (res.status === 'partial') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Pembayaran Sebagian',
+                            text: res.message,
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Gagal', res.message, 'error');
+                    }
+                },
+                error: function(err) {
+                    let msg = 'Terjadi kesalahan jaringan';
+                    if (err.responseJSON && err.responseJSON.message) {
+                        msg = err.responseJSON.message;
+                    }
+                    Swal.fire('Gagal', msg, 'error');
+                }
+            });
+        }
+
+        function confirmCancel(id) {
+            Swal.fire({
+                title: 'Batalkan Pembayaran?',
+                text: "Status tagihan akan dikembalikan menjadi UNPAID dan koneksi akan dinonaktifkan.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f97316',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Batalkan!',
+                cancelButtonText: 'Tutup'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    document.getElementById('form-cancel-' + id).submit();
+                }
+            });
+        }
+
+        function confirmDelete(id) {
+            Swal.fire({
+                title: 'Hapus Invoice?',
+                text: "Invoice ini akan dihapus secara permanen dan tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    document.getElementById('form-delete-' + id).submit();
+                }
+            });
+        }
+
     </script>
 @endpush

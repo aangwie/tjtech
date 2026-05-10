@@ -89,7 +89,15 @@ class BillingController extends Controller
             $admins = User::whereIn('role', ['admin', 'superadmin'])->get(['id', 'name', 'role']);
         }
 
-        return view('billing.index', compact('invoices', 'customers', 'month', 'year', 'total_bill', 'paid_bill', 'unpaid_bill', 'admins', 'selectedAdminId'));
+        // Build a map of customer balances for the view
+        $customerBalances = [];
+        foreach ($invoices as $inv) {
+            if ($inv->customer && !isset($customerBalances[$inv->customer_id])) {
+                $customerBalances[$inv->customer_id] = (float) $inv->customer->balance;
+            }
+        }
+
+        return view('billing.index', compact('invoices', 'customers', 'month', 'year', 'total_bill', 'paid_bill', 'unpaid_bill', 'admins', 'selectedAdminId', 'customerBalances'));
     }
 
     public function generate(Request $request)
@@ -200,13 +208,29 @@ class BillingController extends Controller
             return response()->json(['status' => 'skipped', 'name' => $customer->name]);
         }
 
+        // Check for underpayment from previous months
+        $previousUnderpayment = Invoice::where('customer_id', $customer->id)
+            ->where('underpayment', '>', 0)
+            ->sum('underpayment');
+
+        $basePrice = $customer->monthly_price;
+        $totalPrice = $basePrice + $previousUnderpayment;
+
         Invoice::create([
             'customer_id' => $customer->id,
             'admin_id' => $customer->admin_id,
             'due_date' => $request->due_date,
-            'price' => $customer->monthly_price,
+            'price' => $totalPrice,
+            'carried_underpayment' => $previousUnderpayment,
             'status' => 'unpaid',
         ]);
+
+        // Clear the underpayment on old invoices since it's been carried over
+        if ($previousUnderpayment > 0) {
+            Invoice::where('customer_id', $customer->id)
+                ->where('underpayment', '>', 0)
+                ->update(['underpayment' => 0]);
+        }
 
         return response()->json(['status' => 'created', 'name' => $customer->name]);
     }
@@ -242,7 +266,209 @@ class BillingController extends Controller
         return back()->with('success', 'Tagihan manual berhasil dibuat!');
     }
 
+    /**
+     * AJAX: Pay with Method (Manual or Balance) — called from popup
+     */
+    public function payWithMethod(Request $request, $id)
+    {
+        try {
+            $invoice = Invoice::with('customer')->findOrFail($id);
+            $customer = $invoice->customer;
 
+            if ($invoice->status == 'paid') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invoice sudah lunas.'
+                ]);
+            }
+
+            $user = Auth::user();
+            // Permission check
+            if ($user->role == 'operator' && $customer->operator_id != $user->id) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
+            }
+
+            $displayPrice = $invoice->price > 0 ? $invoice->price : ($customer->monthly_price ?? 0);
+            $method = $request->input('payment_method'); // 'manual' or 'balance'
+            $amountPaid = (float) $request->input('amount_paid', 0);
+
+            if ($method === 'balance') {
+                // Pay with customer balance
+                if ($customer->balance < $displayPrice) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Saldo tidak mencukupi. Saldo: Rp ' . number_format($customer->balance, 0, ',', '.') . ', Tagihan: Rp ' . number_format($displayPrice, 0, ',', '.')
+                    ]);
+                }
+
+                // Deduct balance
+                $customer->balance -= $displayPrice;
+                $customer->save();
+
+                // Mark as paid
+                $invoice->update([
+                    'status' => 'paid',
+                    'amount_paid' => $displayPrice,
+                    'underpayment' => 0,
+                    'payment_method' => 'balance',
+                    'paid_at' => now(),
+                ]);
+                $customer->update(['is_active' => true]);
+
+                // Mikrotik enable
+                $this->enableMikrotik($customer->pppoe_username);
+
+                // Send WA notification
+                $this->sendPaymentNotification($invoice, $customer, $displayPrice, 'balance');
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Pembayaran via saldo berhasil. Sisa saldo: Rp ' . number_format($customer->balance, 0, ',', '.'),
+                    'customer' => $customer->name,
+                ]);
+
+            } elseif ($method === 'manual') {
+                if ($amountPaid <= 0) {
+                    return response()->json(['status' => 'error', 'message' => 'Jumlah pembayaran harus lebih dari 0.']);
+                }
+
+                $underpayment = max(0, $displayPrice - $amountPaid);
+
+                if ($underpayment > 0) {
+                    // Partial payment — status stays unpaid, record underpayment
+                    $invoice->update([
+                        'status' => 'unpaid',
+                        'amount_paid' => $amountPaid,
+                        'underpayment' => $underpayment,
+                        'payment_method' => 'manual',
+                        'paid_at' => now(),
+                    ]);
+                    // Connection stays active
+                    $customer->update(['is_active' => true]);
+                    $this->enableMikrotik($customer->pppoe_username);
+
+                    return response()->json([
+                        'status' => 'partial',
+                        'message' => 'Pembayaran sebagian diterima. Kurang bayar: Rp ' . number_format($underpayment, 0, ',', '.') . ' akan diakumulasi ke tagihan berikutnya.',
+                        'customer' => $customer->name,
+                        'underpayment' => $underpayment,
+                    ]);
+                } else {
+                    // Full payment or overpayment
+                    $overpayment = $amountPaid - $displayPrice;
+
+                    $invoice->update([
+                        'status' => 'paid',
+                        'amount_paid' => $amountPaid,
+                        'underpayment' => 0,
+                        'payment_method' => 'manual',
+                        'paid_at' => now(),
+                    ]);
+                    $customer->update(['is_active' => true]);
+
+                    // If overpaid, add to customer balance
+                    if ($overpayment > 0) {
+                        $customer->balance += $overpayment;
+                        $customer->save();
+                    }
+
+                    $this->enableMikrotik($customer->pppoe_username);
+                    $this->sendPaymentNotification($invoice, $customer, $amountPaid, 'manual');
+
+                    $msg = 'Pembayaran lunas berhasil.';
+                    if ($overpayment > 0) {
+                        $msg .= ' Kelebihan Rp ' . number_format($overpayment, 0, ',', '.') . ' ditambahkan ke saldo.';
+                    }
+
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => $msg,
+                        'customer' => $customer->name,
+                    ]);
+                }
+            }
+
+            return response()->json(['status' => 'error', 'message' => 'Metode pembayaran tidak valid.']);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * AJAX: Get customer info for payment popup
+     */
+    public function getInvoiceInfo($id)
+    {
+        $invoice = Invoice::with('customer')->findOrFail($id);
+        $customer = $invoice->customer;
+        $displayPrice = $invoice->price > 0 ? $invoice->price : ($customer->monthly_price ?? 0);
+
+        return response()->json([
+            'invoice_id' => $invoice->id,
+            'customer_name' => $customer->name,
+            'customer_id' => $customer->id,
+            'internet_number' => $customer->internet_number,
+            'price' => $displayPrice,
+            'price_formatted' => 'Rp ' . number_format($displayPrice, 0, ',', '.'),
+            'balance' => (float) $customer->balance,
+            'balance_formatted' => 'Rp ' . number_format($customer->balance, 0, ',', '.'),
+            'balance_sufficient' => $customer->balance >= $displayPrice,
+            'carried_underpayment' => (float) $invoice->carried_underpayment,
+            'carried_underpayment_formatted' => 'Rp ' . number_format($invoice->carried_underpayment, 0, ',', '.'),
+            'amount_paid' => (float) $invoice->amount_paid,
+            'amount_paid_formatted' => 'Rp ' . number_format($invoice->amount_paid, 0, ',', '.'),
+            'underpayment' => (float) $invoice->underpayment,
+            'underpayment_formatted' => 'Rp ' . number_format($invoice->underpayment, 0, ',', '.'),
+        ]);
+    }
+
+    /**
+     * Helper: Enable Mikrotik connection
+     */
+    private function enableMikrotik($pppoeUsername)
+    {
+        try {
+            if ($this->mikrotik->isConnected()) {
+                $this->mikrotik->setSecretStatus($pppoeUsername, 'enabled');
+                $this->mikrotik->kickUser($pppoeUsername);
+            }
+        } catch (\Exception $e) {
+            // Log but don't fail
+        }
+    }
+
+    /**
+     * Helper: Send WA payment notification
+     */
+    private function sendPaymentNotification($invoice, $customer, $amountPaid, $method)
+    {
+        try {
+            if (!empty($customer->phone)) {
+                $tglBayar = Carbon::now()->locale('id')->isoFormat('D MMMM Y, HH:mm');
+                $nominal = number_format($amountPaid, 0, ',', '.');
+                $periode = Carbon::parse($invoice->due_date)->locale('id')->isoFormat('MMMM Y');
+                $linkDownload = route('frontend.invoice', $invoice->id);
+                $metodeTeks = $method === 'balance' ? 'Saldo' : 'Manual';
+
+                $text = "*PEMBAYARAN DITERIMA*\n\n";
+                $text .= "Halo {$customer->name},\n";
+                $text .= "Terima kasih, pembayaran tagihan internet Anda telah kami terima.\n\n";
+                $text .= "📅 Tanggal Bayar: $tglBayar\n";
+                $text .= "💰 Nominal: Rp $nominal\n";
+                $text .= "💳 Metode: $metodeTeks\n";
+                $text .= "🗓️ Periode Tagihan: $periode\n";
+                $text .= "✅ Status: LUNAS\n\n";
+                $text .= "📄 *Unduh Invoice (PDF):*\n";
+                $text .= "$linkDownload\n\n";
+                $text .= "Internet Anda sudah aktif kembali. Terima kasih atas kepercayaan Anda.";
+
+                $this->wa->send($customer->phone, $text);
+            }
+        } catch (\Exception $e) {
+            // Log but don't fail
+        }
+    }
 
     /**
      * PROCESS PAYMENT VIA AJAX (MASS PAYMENT)
@@ -417,7 +643,13 @@ class BillingController extends Controller
         }
 
         // Update Database
-        $invoice->update(['status' => 'unpaid']);
+        $invoice->update([
+            'status' => 'unpaid',
+            'amount_paid' => 0,
+            'underpayment' => 0,
+            'payment_method' => null,
+            'paid_at' => null
+        ]);
         $customer->update(['is_active' => false]);
 
         // Eksekusi Mikrotik

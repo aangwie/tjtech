@@ -23,7 +23,8 @@ class ForceConnectionMode
         try {
             $setting = \App\Models\SiteSetting::first();
             if ($setting) {
-                if ($setting->connection_mode === 'https' && !$request->secure()) {
+                // Only force HTTPS if NOT on local environment
+                if ($setting->connection_mode === 'https' && !$request->secure() && !app()->isLocal()) {
                     return redirect()->secure($request->getRequestUri());
                 } elseif ($setting->connection_mode === 'http' && $request->secure()) {
                     return redirect()->to('http://' . $request->getHttpHost() . $request->getRequestUri());

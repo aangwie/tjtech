@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PppoeController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BillingRekapController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\WhatsappController;
@@ -95,8 +96,17 @@ Route::middleware(['auth'])->group(function () {
 
     // Billing
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
+
+    // Billing Rekap (before {id} routes to avoid route conflict)
+    Route::get('/billing/rekap', [BillingRekapController::class, 'index'])->name('billing.rekap');
+    Route::post('/billing/rekap/topup', [BillingRekapController::class, 'topUpBalance'])->name('billing.topup');
+    Route::post('/billing/rekap/update-balance', [BillingRekapController::class, 'updateBalance'])->name('billing.updateBalance');
+    Route::get('/billing/rekap/{id}/invoices', [BillingRekapController::class, 'getCustomerInvoices'])->name('billing.rekap.invoices');
+
     Route::post('/billing/{id}/pay', [BillingController::class, 'processPayment'])->name('billing.pay');
     Route::post('/billing/{id}/pay-ajax', [BillingController::class, 'processPaymentAjax'])->name('billing.payAjax');
+    Route::post('/billing/{id}/pay-method', [BillingController::class, 'payWithMethod'])->name('billing.payMethod');
+    Route::get('/billing/{id}/info', [BillingController::class, 'getInvoiceInfo'])->name('billing.info');
 
     Route::post('/billing/{id}/cancel', [BillingController::class, 'cancelPayment'])->name('billing.cancel');
     Route::post('/billing/store', [BillingController::class, 'store'])->name('billing.store');

@@ -50,11 +50,11 @@ class AppServiceProvider extends ServiceProvider
             View::share('company', $company);
         }
 
-        // Force HTTPS or HTTP based on SiteSetting
+        // Force HTTPS or HTTP based on SiteSetting (Only force HTTPS if NOT on local)
         if (!app()->runningInConsole() && Schema::hasTable('site_settings')) {
             $setting = SiteSetting::first();
             if ($setting) {
-                if ($setting->connection_mode === 'https') {
+                if ($setting->connection_mode === 'https' && !app()->isLocal()) {
                     URL::forceScheme('https');
                 } elseif ($setting->connection_mode === 'http') {
                     URL::forceScheme('http');

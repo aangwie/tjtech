@@ -132,6 +132,18 @@
                             class="hidden lg:block absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
                             style="display:none;">Tagihan</span>
                     </a>
+
+                    <a href="{{ route('billing.rekap') }}"
+                        class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+                                                            {{ request()->routeIs('billing.rekap') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                        :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
+                        <i
+                            class="fas fa-chart-bar w-5 text-center flex-shrink-0 {{ request()->routeIs('billing.rekap') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
+                        <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Rekap Tagihan</span>
+                        <span x-show="sidebarCollapsed"
+                            class="hidden lg:block absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
+                            style="display:none;">Rekap Tagihan</span>
+                    </a>
                 @endif
 
                 @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
