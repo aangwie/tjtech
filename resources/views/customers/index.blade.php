@@ -12,8 +12,10 @@
                                             showImportModal: false, 
                                             showSyncModal: false,
                                             showDeleteAllModal: false,
+                                            showTopupHistoryModal: false,
                                             deleteMethod: '0'
-                                        }" @open-edit-modal.window="showEditModal = true">
+                                        }" @open-edit-modal.window="showEditModal = true"
+                                           @open-topup-history.window="showTopupHistoryModal = true">
 
         <!-- Toolbar -->
         <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -81,6 +83,9 @@
                                 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">
                                 Harga Paket</th>
                             <th
+                                class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">
+                                Saldo</th>
+                            <th
                                 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-r-lg text-right">
                                 Aksi</th>
                         </tr>
@@ -135,8 +140,19 @@
                                 <td class="px-4 py-3 align-middle font-medium text-slate-700 dark:text-slate-300">
                                     Rp {{ number_format($c->monthly_price, 0, ',', '.') }}
                                 </td>
+                                <td class="px-4 py-3 align-middle">
+                                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold {{ (float)$c->balance > 0 ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400' }}">
+                                        Rp {{ number_format($c->balance, 0, ',', '.') }}
+                                    </span>
+                                </td>
                                 <td class="px-4 py-3 align-middle text-right">
                                     <div class="flex justify-end gap-2">
+                                        <button type="button"
+                                            onclick="openTopUpSwal({{ $c->id }}, '{{ addslashes($c->name) }}', {{ (float)$c->balance }})"
+                                            class="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md transition-colors"
+                                            title="Top Up Saldo">
+                                            <i class="fas fa-wallet"></i>
+                                        </button>
                                         <button
                                             class="btn-edit p-1.5 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-md transition-colors"
                                             data-id="{{ $c->id }}" data-internet="{{ $c->internet_number }}"
@@ -620,6 +636,59 @@
             </div>
         </div>
 
+        <!-- MODAL RIWAYAT TOP UP (Alpine + DataTable) -->
+        <div x-show="showTopupHistoryModal" class="relative z-500" style="display:none;">
+            <div x-show="showTopupHistoryModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm transition-opacity"></div>
+            <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+                <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                    <div x-show="showTopupHistoryModal" x-transition:enter="ease-out duration-300"
+                        x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                        x-transition:leave="ease-in duration-200"
+                        x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                        x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                        class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl"
+                        @click.away="showTopupHistoryModal = false">
+
+                        <div class="bg-white dark:bg-slate-800 px-4 pb-4 pt-5 sm:p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <i class="fas fa-history text-blue-500"></i>
+                                    <span>Riwayat Top Up — <span id="topupHistoryCustomerName" class="text-primary-600"></span></span>
+                                </h3>
+                                <div class="text-right">
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">Saldo Saat Ini:</span>
+                                    <span id="topupHistoryBalance" class="ml-1 text-sm font-bold text-green-600 dark:text-green-400"></span>
+                                </div>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table id="tableTopupHistory" class="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-l-lg">Tanggal</th>
+                                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-3 bg-slate-50 dark:bg-slate-700/50">Nominal</th>
+                                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-3 bg-slate-50 dark:bg-slate-700/50">Catatan</th>
+                                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-r-lg text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 dark:bg-slate-700/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                            <button type="button" @click="showTopupHistoryModal = false"
+                                class="inline-flex w-full justify-center rounded-md bg-slate-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-500 sm:w-auto">Tutup</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Hidden Form for Enhanced Deletion -->
@@ -808,6 +877,233 @@
             form.attr('action', '/customers/' + id);
             $('#deleteMikrotikFlag').val(mikrotikFlag);
             form.submit();
+        }
+
+        // === TOP UP SALDO SWEETALERT ===
+        function openTopUpSwal(customerId, customerName, currentBalance) {
+            Swal.fire({
+                title: '<i class="fas fa-wallet text-green-500 mr-2"></i> Top Up Saldo',
+                html: `
+                    <div class="text-left mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+                        <div class="flex justify-between mb-1"><span class="text-gray-500">Pelanggan:</span> <span class="font-semibold">${customerName}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Saldo Saat Ini:</span> <span class="font-bold ${currentBalance > 0 ? 'text-green-600' : 'text-gray-600'}">Rp ${Number(currentBalance).toLocaleString('id-ID')}</span></div>
+                    </div>
+                    <div class="text-left mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nominal Top Up (Rp)</label>
+                        <input type="number" id="swal_topup_amount" class="swal2-input !m-0 w-full" placeholder="0" min="1" style="height: 40px; font-size: 1rem;">
+                    </div>
+                    <div class="text-left mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Catatan (opsional)</label>
+                        <input type="text" id="swal_topup_notes" class="swal2-input !m-0 w-full" placeholder="Keterangan top up..." style="height: 36px; font-size: 0.875rem;">
+                    </div>
+                    <button type="button" onclick="showTopupHistory(${customerId})" class="w-full text-left text-sm text-blue-600 hover:text-blue-800 font-medium py-2 flex items-center gap-2">
+                        <i class="fas fa-history"></i> Lihat Riwayat Top Up
+                    </button>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-plus-circle mr-1"></i> Top Up',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#16a34a',
+                cancelButtonColor: '#64748b',
+                width: '480px',
+                preConfirm: () => {
+                    const amount = document.getElementById('swal_topup_amount').value;
+                    if (!amount || amount <= 0) {
+                        Swal.showValidationMessage('Nominal top up harus lebih dari 0');
+                        return false;
+                    }
+                    const notes = document.getElementById('swal_topup_notes').value;
+                    return { amount: parseFloat(amount), notes: notes };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    processTopUp(customerId, result.value.amount, result.value.notes);
+                }
+            });
+        }
+
+        function processTopUp(customerId, amount, notes) {
+            Swal.fire({ title: 'Memproses...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+            $.ajax({
+                url: '{{ route("billing.topup") }}',
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                data: JSON.stringify({ customer_id: customerId, amount: amount, notes: notes }),
+                contentType: 'application/json',
+                success: function(res) {
+                    if (res.status) {
+                        Swal.fire({ icon: 'success', title: 'Berhasil!', text: res.message }).then(() => { location.reload(); });
+                    } else {
+                        Swal.fire('Gagal', res.message, 'error');
+                    }
+                },
+                error: function(err) {
+                    let msg = 'Terjadi kesalahan';
+                    if (err.responseJSON && err.responseJSON.message) msg = err.responseJSON.message;
+                    Swal.fire('Gagal', msg, 'error');
+                }
+            });
+        }
+
+        function showTopupHistory(customerId) {
+            Swal.fire({ title: 'Memuat riwayat...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+            $.ajax({
+                url: `/customers/${customerId}/topup-history`,
+                method: 'GET',
+                success: function(data) {
+                    Swal.close();
+
+                    // Set header info
+                    $('#topupHistoryCustomerName').text(data.customer_name);
+                    $('#topupHistoryBalance').text(data.balance_formatted);
+
+                    // Destroy existing DataTable if any
+                    if ($.fn.DataTable.isDataTable('#tableTopupHistory')) {
+                        $('#tableTopupHistory').DataTable().destroy();
+                        $('#tableTopupHistory tbody').empty();
+                    }
+
+                    // Populate rows
+                    let rows = '';
+                    data.topups.forEach(function(t) {
+                        rows += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <td class="px-3 py-2.5 text-slate-600 dark:text-slate-300">
+                                <i class="far fa-calendar-alt mr-1 text-slate-400"></i>${t.date}
+                            </td>
+                            <td class="px-3 py-2.5">
+                                <span class="font-bold text-green-600 dark:text-green-400">+${t.amount_formatted}</span>
+                            </td>
+                            <td class="px-3 py-2.5 text-slate-500 dark:text-slate-400 text-xs">${t.notes || '<span class="italic text-slate-400">—</span>'}</td>
+                            <td class="px-3 py-2.5 text-right">
+                                <div class="flex justify-end gap-1">
+                                    <button onclick="editTopup(${t.id}, ${t.amount}, '${(t.notes || '').replace(/'/g, "\\'")}')"
+                                        class="p-1.5 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-md transition-colors" title="Edit">
+                                        <i class="fas fa-pencil-alt text-xs"></i>
+                                    </button>
+                                    <button onclick="deleteTopup(${t.id}, ${customerId})"
+                                        class="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors" title="Hapus">
+                                        <i class="fas fa-trash-alt text-xs"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                    $('#tableTopupHistory tbody').html(rows);
+
+                    // Init DataTable
+                    $('#tableTopupHistory').DataTable({
+                        responsive: true,
+                        order: [[0, 'desc']],
+                        language: {
+                            emptyTable: 'Belum ada riwayat top up',
+                            info: 'Menampilkan _START_ - _END_ dari _TOTAL_ data',
+                            search: 'Cari:',
+                            lengthMenu: 'Tampilkan _MENU_ data',
+                            paginate: { previous: '‹', next: '›' }
+                        },
+                        pageLength: 10,
+                    });
+
+                    // Store customerId for refresh
+                    window._topupHistoryCustomerId = customerId;
+
+                    // Open the modal
+                    window.dispatchEvent(new CustomEvent('open-topup-history'));
+                },
+                error: function() {
+                    Swal.fire('Error', 'Gagal memuat riwayat top up', 'error');
+                }
+            });
+        }
+
+        function editTopup(topupId, currentAmount, currentNotes) {
+            Swal.fire({
+                title: '<i class="fas fa-pencil-alt text-amber-500 mr-2"></i> Edit Top Up',
+                html: `
+                    <div class="text-left mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nominal (Rp)</label>
+                        <input type="number" id="swal_edit_topup_amount" class="swal2-input !m-0 w-full" value="${currentAmount}" min="1" style="height: 40px; font-size: 1rem;">
+                    </div>
+                    <div class="text-left">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Catatan</label>
+                        <input type="text" id="swal_edit_topup_notes" class="swal2-input !m-0 w-full" value="${currentNotes}" style="height: 36px; font-size: 0.875rem;">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-save mr-1"></i> Simpan',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#64748b',
+                width: '420px',
+                preConfirm: () => {
+                    const amount = document.getElementById('swal_edit_topup_amount').value;
+                    if (!amount || amount <= 0) {
+                        Swal.showValidationMessage('Nominal harus lebih dari 0');
+                        return false;
+                    }
+                    return { amount: parseFloat(amount), notes: document.getElementById('swal_edit_topup_notes').value };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                    $.ajax({
+                        url: `/customers/topup/${topupId}`,
+                        method: 'PUT',
+                        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                        data: JSON.stringify({ amount: result.value.amount, notes: result.value.notes }),
+                        contentType: 'application/json',
+                        success: function(res) {
+                            if (res.status) {
+                                Swal.fire({ icon: 'success', title: 'Berhasil!', text: res.message, timer: 1500, showConfirmButton: false });
+                                // Refresh the DataTable
+                                setTimeout(() => { showTopupHistory(window._topupHistoryCustomerId); }, 1600);
+                            } else {
+                                Swal.fire('Gagal', res.message, 'error');
+                            }
+                        },
+                        error: function(err) {
+                            Swal.fire('Gagal', err.responseJSON?.message || 'Terjadi kesalahan', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function deleteTopup(topupId, customerId) {
+            Swal.fire({
+                title: 'Hapus Top Up?',
+                text: 'Saldo pelanggan akan dikurangi sesuai nominal top up ini.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Menghapus...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                    $.ajax({
+                        url: `/customers/topup/${topupId}`,
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                        success: function(res) {
+                            if (res.status) {
+                                Swal.fire({ icon: 'success', title: 'Dihapus!', text: res.message, timer: 1500, showConfirmButton: false });
+                                setTimeout(() => { showTopupHistory(customerId); }, 1600);
+                            } else {
+                                Swal.fire('Gagal', res.message, 'error');
+                            }
+                        },
+                        error: function(err) {
+                            Swal.fire('Gagal', err.responseJSON?.message || 'Terjadi kesalahan', 'error');
+                        }
+                    });
+                }
+            });
         }
     </script>
 @endpush

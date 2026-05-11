@@ -240,6 +240,9 @@ Route::middleware(['auth'])->group(function () {
 
     // CUSTOMER MANAGEMENT (Accessible by Admin & Operator)
     Route::post('/customers/destroy-all', [CustomerController::class, 'destroyAll'])->name('customers.destroyAll');
+    Route::get('/customers/{id}/topup-history', [CustomerController::class, 'getTopupHistory'])->name('customers.topupHistory');
+    Route::put('/customers/topup/{topupId}', [CustomerController::class, 'updateTopup'])->name('customers.updateTopup');
+    Route::delete('/customers/topup/{topupId}', [CustomerController::class, 'deleteTopup'])->name('customers.deleteTopup');
     Route::resource('customers', CustomerController::class);
 });
 

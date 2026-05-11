@@ -103,8 +103,19 @@ class BillingRekapController extends Controller
             return response()->json(['status' => false, 'message' => 'Anda tidak berhak mengubah saldo pelanggan ini.'], 403);
         }
 
+        $balanceBefore = (float) $customer->balance;
         $customer->balance += $request->amount;
         $customer->save();
+
+        // Record top-up history
+        \App\Models\BalanceTopup::create([
+            'customer_id' => $customer->id,
+            'admin_id' => $user->id,
+            'amount' => $request->amount,
+            'balance_before' => $balanceBefore,
+            'balance_after' => (float) $customer->balance,
+            'notes' => $request->input('notes', null),
+        ]);
 
         return response()->json([
             'status' => true,

@@ -36,4 +36,9 @@ class Customer extends Model
     {
         return $this->belongsTo(Olt::class);
     }
+
+    public function topups()
+    {
+        return $this->hasMany(BalanceTopup::class);
+    }
 }

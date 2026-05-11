@@ -58,16 +58,6 @@ class BillingController extends Controller
         $unpaid_bill = 0;
 
         foreach ($invoices as $inv) {
-            // Asumsi 'price' ada di tabel Invoice. 
-            // Jika price di invoice null/0 (pake harga customer), logicnya harus disesuaikan.
-            // Tapi biasanya saat generate, price disimpan. Kita pakai $inv->price langsung.
-            // Jika $inv->price belum ada (masih ikut customer), ambil dari relation.
-            // Untuk simplifikasi dan performa, sebaiknya saat create invoice price disimpan.
-            // Cek implementation generate: Invoice::create([...]) -> price tdk di set? 
-            // Jika tdk di set, berarti nol. Kita cek view: {{ number_format($inv->price, ...) }}
-            // View pakai $inv->price. Jadi asumsi column price ada.
-
-            // Perbaikan logic harga: Jika invoice price 0, ambil dari customer
             $price = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
 
             $total_bill += $price;
@@ -97,7 +87,20 @@ class BillingController extends Controller
             }
         }
 
-        return view('billing.index', compact('invoices', 'customers', 'month', 'year', 'total_bill', 'paid_bill', 'unpaid_bill', 'admins', 'selectedAdminId', 'customerBalances'));
+        // Build arrears map: invoices with underpayment > 0 per customer (from any month)
+        $customerIds = $invoices->pluck('customer_id')->unique()->toArray();
+        $arrearsQuery = Invoice::with('customer')
+            ->whereIn('customer_id', $customerIds)
+            ->where('underpayment', '>', 0)
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        $arrearsByCustomer = [];
+        foreach ($arrearsQuery as $arrear) {
+            $arrearsByCustomer[$arrear->customer_id][] = $arrear;
+        }
+
+        return view('billing.index', compact('invoices', 'customers', 'month', 'year', 'total_bill', 'paid_bill', 'unpaid_bill', 'admins', 'selectedAdminId', 'customerBalances', 'arrearsByCustomer'));
     }
 
     public function generate(Request $request)
@@ -347,9 +350,17 @@ class BillingController extends Controller
                     $customer->update(['is_active' => true]);
                     $this->enableMikrotik($customer->pppoe_username);
 
+                    // Process arrears payments (Opsi B: separate amount per arrear)
+                    $arrearsResult = $this->processArrearsPayments($request, $customer);
+
+                    $msg = 'Pembayaran sebagian diterima. Kurang bayar: Rp ' . number_format($underpayment, 0, ',', '.');
+                    if ($arrearsResult) {
+                        $msg .= '. ' . $arrearsResult;
+                    }
+
                     return response()->json([
                         'status' => 'partial',
-                        'message' => 'Pembayaran sebagian diterima. Kurang bayar: Rp ' . number_format($underpayment, 0, ',', '.') . ' akan diakumulasi ke tagihan berikutnya.',
+                        'message' => $msg,
                         'customer' => $customer->name,
                         'underpayment' => $underpayment,
                     ]);
@@ -375,9 +386,15 @@ class BillingController extends Controller
                     $this->enableMikrotik($customer->pppoe_username);
                     $this->sendPaymentNotification($invoice, $customer, $amountPaid, 'manual');
 
+                    // Process arrears payments (Opsi B: separate amount per arrear)
+                    $arrearsResult = $this->processArrearsPayments($request, $customer);
+
                     $msg = 'Pembayaran lunas berhasil.';
                     if ($overpayment > 0) {
                         $msg .= ' Kelebihan Rp ' . number_format($overpayment, 0, ',', '.') . ' ditambahkan ke saldo.';
+                    }
+                    if ($arrearsResult) {
+                        $msg .= ' ' . $arrearsResult;
                     }
 
                     return response()->json([
@@ -404,6 +421,24 @@ class BillingController extends Controller
         $customer = $invoice->customer;
         $displayPrice = $invoice->price > 0 ? $invoice->price : ($customer->monthly_price ?? 0);
 
+        // Get arrears: other invoices for this customer with underpayment > 0
+        $arrears = Invoice::where('customer_id', $customer->id)
+            ->where('id', '!=', $invoice->id)
+            ->where('underpayment', '>', 0)
+            ->orderBy('due_date', 'asc')
+            ->get()
+            ->map(function ($arr) {
+                return [
+                    'id' => $arr->id,
+                    'due_date' => $arr->due_date,
+                    'period' => Carbon::parse($arr->due_date)->locale('id')->isoFormat('MMMM Y'),
+                    'price' => (float) $arr->price,
+                    'amount_paid' => (float) $arr->amount_paid,
+                    'underpayment' => (float) $arr->underpayment,
+                    'underpayment_formatted' => 'Rp ' . number_format($arr->underpayment, 0, ',', '.'),
+                ];
+            });
+
         return response()->json([
             'invoice_id' => $invoice->id,
             'customer_name' => $customer->name,
@@ -420,7 +455,64 @@ class BillingController extends Controller
             'amount_paid_formatted' => 'Rp ' . number_format($invoice->amount_paid, 0, ',', '.'),
             'underpayment' => (float) $invoice->underpayment,
             'underpayment_formatted' => 'Rp ' . number_format($invoice->underpayment, 0, ',', '.'),
+            'arrears' => $arrears,
         ]);
+    }
+
+    /**
+     * Helper: Process arrears payments (Opsi B — separate amount per arrear)
+     * Expects request to contain 'arrears_payments' as array of {id, amount}
+     */
+    private function processArrearsPayments(Request $request, $customer)
+    {
+        $arrearsPayments = $request->input('arrears_payments', []);
+        if (empty($arrearsPayments)) {
+            return null;
+        }
+
+        $paidCount = 0;
+        $partialCount = 0;
+
+        foreach ($arrearsPayments as $arrearPayment) {
+            $arrearId = $arrearPayment['id'] ?? null;
+            $arrearAmount = (float) ($arrearPayment['amount'] ?? 0);
+
+            if (!$arrearId || $arrearAmount <= 0) continue;
+
+            $arrearInvoice = Invoice::where('id', $arrearId)
+                ->where('customer_id', $customer->id)
+                ->where('underpayment', '>', 0)
+                ->first();
+
+            if (!$arrearInvoice) continue;
+
+            $newAmountPaid = (float) $arrearInvoice->amount_paid + $arrearAmount;
+            $newUnderpayment = max(0, (float) $arrearInvoice->underpayment - $arrearAmount);
+
+            if ($newUnderpayment <= 0) {
+                // Fully paid
+                $arrearInvoice->update([
+                    'amount_paid' => $newAmountPaid,
+                    'underpayment' => 0,
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                ]);
+                $paidCount++;
+            } else {
+                // Still partial
+                $arrearInvoice->update([
+                    'amount_paid' => $newAmountPaid,
+                    'underpayment' => $newUnderpayment,
+                ]);
+                $partialCount++;
+            }
+        }
+
+        $parts = [];
+        if ($paidCount > 0) $parts[] = "$paidCount tunggakan dilunasi";
+        if ($partialCount > 0) $parts[] = "$partialCount tunggakan dibayar sebagian";
+
+        return !empty($parts) ? implode(', ', $parts) . '.' : null;
     }
 
     /**

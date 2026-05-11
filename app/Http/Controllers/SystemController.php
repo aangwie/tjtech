@@ -54,7 +54,7 @@ class SystemController extends Controller
         $setting = \App\Models\SiteSetting::first();
         $githubToken = $setting ? $setting->github_token : env('GITHUB_TOKEN');
 
-        $githubRepo = env('GITHUB_REPO', 'aangwie/mikbill'); // default repo
+        $githubRepo = env('GITHUB_REPO', 'aangwie/tjtech'); // default repo
         $branch = env('GITHUB_BRANCH', 'main');
 
         // If no .git folder, try to initialize it

@@ -28,19 +28,19 @@
 
                 <!-- GitHub Token Form -->
                 <div
-                    class="mb-8 max-w-lg mx-auto bg-slate-50 dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                    class="mb-8 w-full mx-auto bg-slate-50 dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
                     <form action="{{ route('system.saveToken') }}" method="POST" class="space-y-4">
                         @csrf
                         <div class="text-left">
                             <label for="github_token"
-                                class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">GitHub Personal
+                                class="block text-sm font-bold text-slate-900 dark:text-white mb-1">GitHub Personal
                                 Access Token</label>
                             <div class="relative rounded-md shadow-sm">
                                 <input type="password" name="github_token" id="github_token"
-                                    class="block w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-900 dark:border-slate-600 dark:text-white dark:placeholder-slate-400"
+                                    class="block w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-slate-900 dark:bg-slate-900 dark:border-slate-600 dark:text-white dark:placeholder-slate-400"
                                     placeholder="github_pat_..." value="{{ $setting->github_token ?? '' }}">
                             </div>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Token digunakan untuk autentikasi
+                            <p class="mt-1 text-xs text-slate-600 dark:text-slate-300">Token digunakan untuk autentikasi
                                 private repository.</p>
                         </div>
                         <button type="submit"
@@ -64,7 +64,7 @@
                         onsubmit="return confirm('Yakin ingin menjalankan migrasi database secara manual?');">
                         @csrf
                         <button type="submit"
-                            class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-slate-800 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-slate-700 transition-all transform hover:-translate-y-0.5">
+                            class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-slate-700 transition-all transform hover:-translate-y-0.5">
                             <i class="fas fa-database mr-2 text-indigo-400"></i> Run Migration
                         </button>
                     </form>

@@ -212,8 +212,21 @@
                                 <td class="px-4 py-3 align-middle font-medium text-slate-700 dark:text-slate-200">
                                     @php
                                         $displayPrice = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
+                                        $custArrears = $arrearsByCustomer[$inv->customer_id] ?? [];
+                                        // Exclude current invoice from arrears display
+                                        $custArrears = array_filter($custArrears, fn($a) => $a->id !== $inv->id);
                                     @endphp
                                     Rp {{ number_format($displayPrice, 0, ',', '.') }}
+                                    @if(count($custArrears) > 0 && $inv->status == 'unpaid')
+                                        <div class="mt-1 space-y-0.5">
+                                            @foreach($custArrears as $arrear)
+                                                <div class="flex items-center gap-1 text-[10px] text-orange-600 dark:text-orange-400 font-medium">
+                                                    <i class="fas fa-exclamation-circle text-[8px]"></i>
+                                                    <span>{{ \Carbon\Carbon::parse($arrear->due_date)->isoFormat('MMM Y') }}: -Rp {{ number_format($arrear->underpayment, 0, ',', '.') }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-3 align-middle">
                                     @if($inv->status == 'paid')
@@ -933,6 +946,49 @@
                 success: function(data) {
                     Swal.close();
 
+                    // Build arrears HTML section
+                    let arrearsHtml = '';
+                    if (data.arrears && data.arrears.length > 0) {
+                        arrearsHtml = `
+                            <div class="text-left mt-4 mb-4">
+                                <label class="block text-sm font-bold text-gray-800 mb-2">
+                                    <i class="fas fa-exclamation-triangle text-orange-500 mr-1"></i> Kurang Bayar Sebelumnya
+                                </label>
+                                <div class="space-y-2 max-h-48 overflow-y-auto" id="swal_arrears_container">
+                        `;
+                        data.arrears.forEach((arr, idx) => {
+                            arrearsHtml += `
+                                <div class="border border-orange-200 rounded-lg p-3 bg-orange-50">
+                                    <label class="flex items-start gap-2 cursor-pointer">
+                                        <input type="checkbox" class="arrear-checkbox mt-0.5 w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                                            data-arrear-id="${arr.id}"
+                                            data-arrear-amount="${arr.underpayment}"
+                                            data-arrear-idx="${idx}"
+                                            onchange="toggleArrearInput(this)">
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-sm font-medium text-gray-700">${arr.period}</span>
+                                                <span class="text-sm font-bold text-orange-600">${arr.underpayment_formatted}</span>
+                                            </div>
+                                            <div class="text-xs text-gray-500">Sudah dibayar: Rp ${Number(arr.amount_paid).toLocaleString('id-ID')}</div>
+                                            <div class="mt-2 hidden" id="arrear_input_wrapper_${idx}">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Jumlah yang dibayar (Rp)</label>
+                                                <input type="number" id="arrear_amount_${idx}" class="w-full px-3 py-1.5 text-sm border border-orange-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                                                    value="${arr.underpayment}" min="1" max="${arr.underpayment}"
+                                                    onchange="updateArrearTotal()" oninput="updateArrearTotal()">
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            `;
+                        });
+                        arrearsHtml += `
+                                </div>
+                                <div class="mt-2 text-right text-xs font-semibold text-orange-700" id="swal_arrear_total_text" style="display:none;">Total Tunggakan: <span id="swal_arrear_total_value">Rp 0</span></div>
+                            </div>
+                        `;
+                    }
+
                     let htmlContent = `
                         <div class="text-left mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
                             <div class="flex justify-between mb-1"><span class="text-gray-500">Pelanggan:</span> <span class="font-semibold">${data.customer_name}</span></div>
@@ -955,10 +1011,12 @@
                         </div>
 
                         <div id="swal_amount_container" class="text-left">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Pembayaran (Rp)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Pembayaran Tagihan Bulan Ini (Rp)</label>
                             <input type="number" id="swal_amount" class="swal2-input !m-0 w-full" value="${data.price}" style="height: 40px; font-size: 1rem;">
                             <p class="text-xs text-orange-600 mt-1 hidden" id="swal_underpayment_warning">Jika bayar kurang, sisa akan diakumulasi ke bulan depan.</p>
                         </div>
+
+                        ${arrearsHtml}
                     `;
 
                     Swal.fire({
@@ -970,6 +1028,7 @@
                         confirmButtonColor: '#3085d6',
                         cancelButtonColor: '#d33',
                         focusConfirm: false,
+                        width: '540px',
                         didOpen: () => {
                             // Add event listener for amount to show warning
                             const amountInput = document.getElementById('swal_amount');
@@ -996,11 +1055,23 @@
                                 amount = data.price;
                             }
 
-                            return { method: method, amount: parseFloat(amount) };
+                            // Collect arrears payments
+                            let arrearsPayments = [];
+                            document.querySelectorAll('.arrear-checkbox:checked').forEach(function(cb) {
+                                const idx = cb.dataset.arrearIdx;
+                                const arrearId = cb.dataset.arrearId;
+                                const arrearAmountInput = document.getElementById('arrear_amount_' + idx);
+                                const arrearAmount = arrearAmountInput ? parseFloat(arrearAmountInput.value) : 0;
+                                if (arrearAmount > 0) {
+                                    arrearsPayments.push({ id: parseInt(arrearId), amount: arrearAmount });
+                                }
+                            });
+
+                            return { method: method, amount: parseFloat(amount), arrears_payments: arrearsPayments };
                         }
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            processSweetAlertPayment(invoiceId, result.value.method, result.value.amount);
+                            processSweetAlertPayment(invoiceId, result.value.method, result.value.amount, result.value.arrears_payments);
                         }
                     });
                 },
@@ -1009,6 +1080,38 @@
                 }
             });
         }
+
+        // Toggle arrear input visibility
+        window.toggleArrearInput = function(checkbox) {
+            const idx = checkbox.dataset.arrearIdx;
+            const wrapper = document.getElementById('arrear_input_wrapper_' + idx);
+            if (checkbox.checked) {
+                wrapper.classList.remove('hidden');
+            } else {
+                wrapper.classList.add('hidden');
+            }
+            updateArrearTotal();
+        };
+
+        // Update total arrears display
+        window.updateArrearTotal = function() {
+            let total = 0;
+            let anyChecked = false;
+            document.querySelectorAll('.arrear-checkbox:checked').forEach(function(cb) {
+                anyChecked = true;
+                const idx = cb.dataset.arrearIdx;
+                const input = document.getElementById('arrear_amount_' + idx);
+                total += input ? parseFloat(input.value) || 0 : 0;
+            });
+            const totalText = document.getElementById('swal_arrear_total_text');
+            const totalValue = document.getElementById('swal_arrear_total_value');
+            if (totalText) {
+                totalText.style.display = anyChecked ? 'block' : 'none';
+            }
+            if (totalValue) {
+                totalValue.textContent = 'Rp ' + total.toLocaleString('id-ID');
+            }
+        };
 
         // Global toggle helper for sweetalert content
         window.toggleSwalPayMethod = function() {
@@ -1021,7 +1124,7 @@
             }
         };
 
-        function processSweetAlertPayment(invoiceId, method, amount) {
+        function processSweetAlertPayment(invoiceId, method, amount, arrearsPayments = []) {
             Swal.fire({
                 title: 'Memproses...',
                 text: 'Mohon tunggu',
@@ -1037,7 +1140,8 @@
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 data: JSON.stringify({
                     payment_method: method,
-                    amount_paid: amount
+                    amount_paid: amount,
+                    arrears_payments: arrearsPayments
                 }),
                 contentType: 'application/json',
                 success: function(res) {

@@ -337,4 +337,101 @@ class CustomerController extends Controller
             return back()->with('error', 'Gagal hapus massal: ' . $e->getMessage());
         }
     }
+
+    /**
+     * AJAX: Get customer top-up history
+     */
+    public function getTopupHistory($id)
+    {
+        $customer = \App\Models\Customer::findOrFail($id);
+
+        $topups = \App\Models\BalanceTopup::where('customer_id', $customer->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($topup) {
+                return [
+                    'id' => $topup->id,
+                    'amount' => (float) $topup->amount,
+                    'amount_formatted' => 'Rp ' . number_format($topup->amount, 0, ',', '.'),
+                    'balance_before' => (float) $topup->balance_before,
+                    'balance_after' => (float) $topup->balance_after,
+                    'notes' => $topup->notes,
+                    'date' => \Carbon\Carbon::parse($topup->created_at)->locale('id')->isoFormat('DD MMM YYYY, HH:mm'),
+                ];
+            });
+
+        return response()->json([
+            'customer_name' => $customer->name,
+            'balance' => (float) $customer->balance,
+            'balance_formatted' => 'Rp ' . number_format($customer->balance, 0, ',', '.'),
+            'topups' => $topups,
+        ]);
+    }
+
+    /**
+     * AJAX: Update a top-up record
+     */
+    public function updateTopup(Request $request, $topupId)
+    {
+        $user = auth()->user();
+        if (!$user->isAdmin() && !$user->isSuperAdmin()) {
+            return response()->json(['status' => false, 'message' => 'Tidak memiliki akses.'], 403);
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+        ]);
+
+        $topup = \App\Models\BalanceTopup::findOrFail($topupId);
+        $customer = \App\Models\Customer::findOrFail($topup->customer_id);
+
+        // Calculate balance adjustment: reverse old, apply new
+        $oldAmount = (float) $topup->amount;
+        $newAmount = (float) $request->amount;
+        $diff = $newAmount - $oldAmount;
+
+        $customer->balance += $diff;
+        $customer->save();
+
+        $topup->update([
+            'amount' => $newAmount,
+            'balance_after' => (float) $topup->balance_after + $diff,
+            'notes' => $request->input('notes', $topup->notes),
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Top up berhasil diperbarui.',
+            'new_balance' => (float) $customer->balance,
+            'new_balance_formatted' => 'Rp ' . number_format($customer->balance, 0, ',', '.'),
+        ]);
+    }
+
+    /**
+     * AJAX: Delete a top-up record
+     */
+    public function deleteTopup($topupId)
+    {
+        $user = auth()->user();
+        if (!$user->isAdmin() && !$user->isSuperAdmin()) {
+            return response()->json(['status' => false, 'message' => 'Tidak memiliki akses.'], 403);
+        }
+
+        $topup = \App\Models\BalanceTopup::findOrFail($topupId);
+        $customer = \App\Models\Customer::findOrFail($topup->customer_id);
+
+        // Reverse the balance
+        $customer->balance -= (float) $topup->amount;
+        if ($customer->balance < 0) $customer->balance = 0;
+        $customer->save();
+
+        $topup->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Data top up berhasil dihapus. Saldo disesuaikan.',
+            'new_balance' => (float) $customer->balance,
+            'new_balance_formatted' => 'Rp ' . number_format($customer->balance, 0, ',', '.'),
+        ]);
+    }
 }
