@@ -54,6 +54,17 @@
                         @endforeach
                     </select>
                 @endif
+                @if(in_array(auth()->user()->role, ['admin', 'superadmin']) && $operators->count() > 0)
+                    <select name="operator_id"
+                        class="block w-full sm:w-48 rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6">
+                        <option value="">Semua Operator</option>
+                        @foreach($operators as $op)
+                            <option value="{{ $op->id }}" {{ ($selectedOperatorId ?? '') == $op->id ? 'selected' : '' }}>
+                                {{ $op->name }} ({{ ucfirst($op->role) }})
+                            </option>
+                        @endforeach
+                    </select>
+                @endif
                 <select name="month"
                     class="block w-full sm:w-40 rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6">
                     @for ($i = 1; $i <= 12; $i++)
@@ -271,6 +282,11 @@
                                                     Sisa: Rp {{ number_format($excessByInvoice[$inv->id], 0, ',', '.') }}
                                                 </span>
                                             @endif
+                                            @if(isset($paymentAdminByInvoice[$inv->id]))
+                                                <span class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium whitespace-nowrap">
+                                                    <i class="fas fa-user-shield text-[8px]"></i> input by {{ $paymentAdminByInvoice[$inv->id] }}
+                                                </span>
+                                            @endif
                                         </div>
                                     @else
                                         <div class="flex flex-col items-center justify-center gap-1">
@@ -284,6 +300,11 @@
                                             @if($inv->underpayment > 0)
                                                 <span class="text-[10px] text-orange-500 font-semibold whitespace-nowrap">
                                                     Kurang: Rp {{ number_format($inv->underpayment, 0, ',', '.') }}
+                                                </span>
+                                            @endif
+                                            @if(isset($paymentAdminByInvoice[$inv->id]))
+                                                <span class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium whitespace-nowrap">
+                                                    <i class="fas fa-user-shield text-[8px]"></i> input by {{ $paymentAdminByInvoice[$inv->id] }}
                                                 </span>
                                             @endif
                                         </div>

@@ -101,7 +101,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/billing/rekap', [BillingRekapController::class, 'index'])->name('billing.rekap');
     Route::post('/billing/rekap/topup', [BillingRekapController::class, 'topUpBalance'])->name('billing.topup');
     Route::post('/billing/rekap/update-balance', [BillingRekapController::class, 'updateBalance'])->name('billing.updateBalance');
-    Route::get('/billing/rekap/{id}/invoices', [BillingRekapController::class, 'getCustomerInvoices'])->name('billing.rekap.invoices');
+
 
     Route::post('/billing/{id}/pay', [BillingController::class, 'processPayment'])->name('billing.pay');
     Route::post('/billing/{id}/pay-ajax', [BillingController::class, 'processPaymentAjax'])->name('billing.payAjax');

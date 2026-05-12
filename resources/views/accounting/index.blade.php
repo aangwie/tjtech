@@ -49,7 +49,7 @@
                     Rp {{ number_format($totalRevenue, 0, ',', '.') }}
                 </dd>
                 <div class="mt-2 flex items-center text-sm text-slate-500">
-                    <i class="fas fa-arrow-up text-emerald-500 mr-2"></i> Dari Tagihan Lunas
+                    <i class="fas fa-arrow-up text-emerald-500 mr-2"></i> Pembayaran Manual + Kelebihan Saldo
                 </div>
                 <div class="absolute top-0 right-0 p-4 opacity-10">
                     <i class="fas fa-wallet text-emerald-600 fa-4x transform rotate-12"></i>

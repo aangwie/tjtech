@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Models\BillingPayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -33,15 +34,21 @@ class ReportController extends Controller
         // -----------------------------------------
 
         $invoices = $query->get();
+        $invoiceIds = $invoices->pluck('id')->toArray();
 
         // 4. Hitung Rekapitulasi (Dari data yang sudah difilter di atas)
-        $totalTagihan = $invoices->sum(fn($inv) => $inv->customer->monthly_price);
-        
-        $totalLunas = $invoices->where('status', 'paid')
-                        ->sum(fn($inv) => $inv->customer->monthly_price);
-        
-        $totalBelumLunas = $invoices->where('status', 'unpaid')
-                            ->sum(fn($inv) => $inv->customer->monthly_price);
+        $totalTagihan = $invoices->sum(fn($inv) => $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0));
+
+        // Uang Masuk (Pendapatan) = pembayaran manual + kelebihan yang masuk saldo (sama dengan card Pendapatan di /billing)
+        $paidBill = BillingPayment::whereIn('invoice_id', $invoiceIds)
+            ->where('method', 'manual')
+            ->sum('amount');
+        $excessToBalance = BillingPayment::whereIn('invoice_id', $invoiceIds)
+            ->sum('excess_to_balance');
+        $totalPendapatan = (float) $paidBill + (float) $excessToBalance;
+
+        // Kurang Bayar = total underpayment dari invoice unpaid
+        $totalKurangBayar = $invoices->where('status', 'unpaid')->sum('underpayment');
 
         $jumlahLunas = $invoices->where('status', 'paid')->count();
         $jumlahBelumLunas = $invoices->where('status', 'unpaid')->count();
@@ -51,8 +58,8 @@ class ReportController extends Controller
             'month', 
             'year', 
             'totalTagihan', 
-            'totalLunas', 
-            'totalBelumLunas',
+            'totalPendapatan', 
+            'totalKurangBayar',
             'jumlahLunas',
             'jumlahBelumLunas'
         ));

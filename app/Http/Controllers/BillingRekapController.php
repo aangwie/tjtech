@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\BillingPayment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +16,48 @@ class BillingRekapController extends Controller
         $user = Auth::user();
         $selectedAdminId = $request->input('admin_id');
 
-        // Build customer query
+        // Filter bulan & tahun (default: bulan & tahun saat ini)
+        $month = $request->input('month', date('n'));
+        $year = $request->input('year', date('Y'));
+
+        // =============================================
+        // CARD BARIS 1: Data per Periode (Bulan/Tahun)
+        // =============================================
+        $invoiceQuery = Invoice::with('customer')
+            ->whereMonth('due_date', $month)
+            ->whereYear('due_date', $year);
+
+        if ($user->role == 'operator') {
+            $invoiceQuery->whereHas('customer', function ($q) use ($user) {
+                $q->where('operator_id', $user->id);
+            });
+        } elseif ($user->role == 'superadmin' && $selectedAdminId) {
+            $invoiceQuery->whereHas('customer', function ($q) use ($selectedAdminId) {
+                $q->where('admin_id', $selectedAdminId);
+            });
+        }
+
+        $invoices = $invoiceQuery->get();
+        $invoiceIdsAll = $invoices->pluck('id')->toArray();
+
+        // Sudah Dibayar = hanya pembayaran manual (bukan dari saldo)
+        $periodPaidBill = BillingPayment::whereIn('invoice_id', $invoiceIdsAll)
+            ->where('method', 'manual')
+            ->sum('amount');
+
+        // Kelebihan → Saldo
+        $periodExcessToBalance = BillingPayment::whereIn('invoice_id', $invoiceIdsAll)
+            ->sum('excess_to_balance');
+
+        // Pendapatan = pembayaran manual + kelebihan yang masuk saldo
+        $periodRevenue = (float) $periodPaidBill + (float) $periodExcessToBalance;
+
+        // Kurang Bayar (underpayment dari invoice unpaid periode ini)
+        $periodUnderpayment = $invoices->where('status', 'unpaid')->sum('underpayment');
+
+        // =============================================
+        // CARD BARIS 2: Data Grand Total (Semua Periode)
+        // =============================================
         $customerQuery = Customer::with(['invoices']);
 
         if ($user->role == 'operator') {
@@ -26,8 +68,6 @@ class BillingRekapController extends Controller
 
         $customers = $customerQuery->orderBy('name', 'asc')->get();
 
-        // Build rekap data
-        $rekap = [];
         $grandTotalTagihan = 0;
         $grandTotalBayar = 0;
         $grandTotalSaldo = 0;
@@ -42,22 +82,6 @@ class BillingRekapController extends Controller
                 $price = $inv->price > 0 ? $inv->price : ($customer->monthly_price ?? 0);
                 return $price - ($inv->amount_paid ?? 0) - ($inv->carried_underpayment ?? 0);
             });
-            $unpaidCount = $customer->invoices->where('status', 'unpaid')->count();
-            $paidCount = $customer->invoices->where('status', 'paid')->count();
-            $lastInvoice = $customer->invoices->sortByDesc('due_date')->first();
-
-            $rekap[] = [
-                'customer' => $customer,
-                'total_tagihan' => $totalTagihan,
-                'total_bayar' => $totalBayar,
-                'saldo' => (float) $customer->balance,
-                'kurang_bayar' => $totalKurangBayar,
-                'unpaid_count' => $unpaidCount,
-                'paid_count' => $paidCount,
-                'total_invoices' => $customer->invoices->count(),
-                'last_invoice_date' => $lastInvoice ? $lastInvoice->due_date : null,
-                'last_invoice_status' => $lastInvoice ? $lastInvoice->status : null,
-            ];
 
             $grandTotalTagihan += $totalTagihan;
             $grandTotalBayar += $totalBayar;
@@ -71,7 +95,12 @@ class BillingRekapController extends Controller
         }
 
         return view('billing.rekap', compact(
-            'rekap',
+            'month',
+            'year',
+            'periodPaidBill',
+            'periodExcessToBalance',
+            'periodRevenue',
+            'periodUnderpayment',
             'grandTotalTagihan',
             'grandTotalBayar',
             'grandTotalSaldo',
@@ -152,32 +181,6 @@ class BillingRekapController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Saldo berhasil diubah menjadi: Rp ' . number_format($customer->balance, 0, ',', '.'),
-        ]);
-    }
-
-    /**
-     * AJAX: Get customer invoices for detail modal
-     */
-    public function getCustomerInvoices($id)
-    {
-        $customer = Customer::with('invoices')->findOrFail($id);
-        
-        $invoices = $customer->invoices->map(function($inv) use ($customer) {
-            return [
-                'id' => $inv->id,
-                'invoice_number' => '#INV-' . str_pad($inv->id, 5, '0', STR_PAD_LEFT),
-                'due_date' => \Carbon\Carbon::parse($inv->due_date)->isoFormat('DD MMM YYYY'),
-                'price' => $inv->price > 0 ? $inv->price : ($customer->monthly_price ?? 0),
-                'price_formatted' => 'Rp ' . number_format($inv->price > 0 ? $inv->price : ($customer->monthly_price ?? 0), 0, ',', '.'),
-                'status' => $inv->status,
-                'underpayment' => $inv->underpayment,
-                'underpayment_formatted' => 'Rp ' . number_format($inv->underpayment, 0, ',', '.'),
-            ];
-        })->sortByDesc('due_date')->values();
-
-        return response()->json([
-            'customer_name' => $customer->name,
-            'invoices' => $invoices
         ]);
     }
 }

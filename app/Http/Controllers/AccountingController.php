@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Models\BillingPayment;
 use App\Models\Expense;
 use App\Models\Company;
 use Illuminate\Http\Request;
@@ -16,15 +17,22 @@ class AccountingController extends Controller
         $month = $request->input('month', date('m'));
         $year = $request->input('year', date('Y'));
 
-        // 1. HITUNG PEMASUKAN (OMSET)
-        // Ambil invoice LUNAS pada bulan/tahun yang dipilih
+        // 1. HITUNG PEMASUKAN (PENDAPATAN)
+        // Ambil invoice pada bulan/tahun yang dipilih
         $invoices = Invoice::with('customer')
-            ->where('status', 'paid')
-            ->whereMonth('due_date', $month) // Asumsi omset dihitung berdasarkan periode tagihan
+            ->whereMonth('due_date', $month)
             ->whereYear('due_date', $year)
             ->get();
 
-        $totalRevenue = $invoices->sum('price');
+        $invoiceIds = $invoices->pluck('id')->toArray();
+
+        // Pendapatan = pembayaran manual + kelebihan yang masuk saldo (sama dengan card Pendapatan di /billing)
+        $paidBill = BillingPayment::whereIn('invoice_id', $invoiceIds)
+            ->where('method', 'manual')
+            ->sum('amount');
+        $excessToBalance = BillingPayment::whereIn('invoice_id', $invoiceIds)
+            ->sum('excess_to_balance');
+        $totalRevenue = (float) $paidBill + (float) $excessToBalance;
 
         // 2. HITUNG PENGELUARAN
         $expenses = Expense::whereMonth('transaction_date', $month)
@@ -78,14 +86,20 @@ class AccountingController extends Controller
         // Ambil Pilihan Tipe Laporan (Default 1 = Rincian Semua)
         $reportType = $request->input('report_type', 1);
 
-        // Ambil Data Pemasukan Detil
+        // Ambil Data Pemasukan — sama dengan rumus Pendapatan di /billing
         $invoices = Invoice::with('customer')
-            ->where('status', 'paid')
             ->whereMonth('due_date', $month)
             ->whereYear('due_date', $year)
             ->get();
 
-        $totalRevenue = $invoices->sum('price');
+        $invoiceIds = $invoices->pluck('id')->toArray();
+
+        $paidBill = BillingPayment::whereIn('invoice_id', $invoiceIds)
+            ->where('method', 'manual')
+            ->sum('amount');
+        $excessToBalance = BillingPayment::whereIn('invoice_id', $invoiceIds)
+            ->sum('excess_to_balance');
+        $totalRevenue = (float) $paidBill + (float) $excessToBalance;
 
         // Ambil Data Pengeluaran Detil
         $expenses = Expense::whereMonth('transaction_date', $month)

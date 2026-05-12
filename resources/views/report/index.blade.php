@@ -51,29 +51,29 @@
             </div>
         </div>
 
-        <!-- Uang Masuk (Lunas) -->
+        <!-- Uang Masuk (Pendapatan) -->
         <div
             class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 shadow-md text-white">
-            <dt class="truncate text-sm font-medium text-emerald-100 uppercase tracking-wider">Uang Masuk (Lunas)</dt>
+            <dt class="truncate text-sm font-medium text-emerald-100 uppercase tracking-wider">Pendapatan (Uang Masuk)</dt>
             <dd class="mt-2 text-3xl font-bold tracking-tight">
-                Rp {{ number_format($totalLunas, 0, ',', '.') }}
+                Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
             </dd>
-            <p class="mt-1 text-xs text-emerald-100 opacity-80">{{ $jumlahLunas }} Pelanggan</p>
+            <p class="mt-1 text-xs text-emerald-100 opacity-80">{{ $jumlahLunas }} Pelanggan Lunas</p>
             <div class="absolute right-4 top-4 text-white opacity-20">
                 <i class="fas fa-check-circle fa-3x"></i>
             </div>
         </div>
 
-        <!-- Piutang (Belum Lunas) -->
+        <!-- Kurang Bayar -->
         <div
-            class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 p-6 shadow-md text-white">
-            <dt class="truncate text-sm font-medium text-rose-100 uppercase tracking-wider">Piutang (Belum Bayar)</dt>
+            class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-6 shadow-md text-white">
+            <dt class="truncate text-sm font-medium text-amber-100 uppercase tracking-wider">Kurang Bayar</dt>
             <dd class="mt-2 text-3xl font-bold tracking-tight">
-                Rp {{ number_format($totalBelumLunas, 0, ',', '.') }}
+                Rp {{ number_format($totalKurangBayar, 0, ',', '.') }}
             </dd>
-            <p class="mt-1 text-xs text-rose-100 opacity-80">{{ $jumlahBelumLunas }} Pelanggan</p>
+            <p class="mt-1 text-xs text-amber-100 opacity-80">{{ $jumlahBelumLunas }} Pelanggan Belum Lunas</p>
             <div class="absolute right-4 top-4 text-white opacity-20">
-                <i class="fas fa-times-circle fa-3x"></i>
+                <i class="fas fa-money-bill-wave fa-3x"></i>
             </div>
         </div>
     </div>

@@ -34,9 +34,10 @@ class BillingController extends Controller
         $month = $request->input('month', date('n'));
         $year = $request->input('year', date('Y'));
         $selectedAdminId = $request->input('admin_id');
+        $selectedOperatorId = $request->input('operator_id');
 
         // Query Tagihan dengan Filter
-        $invoiceQuery = Invoice::with('customer')
+        $invoiceQuery = Invoice::with(['customer', 'payments.admin'])
             ->whereMonth('due_date', $month)
             ->whereYear('due_date', $year)
             ->orderByRaw("FIELD(status, 'unpaid', 'paid')")
@@ -49,6 +50,13 @@ class BillingController extends Controller
         } elseif ($user->role == 'superadmin' && $selectedAdminId) {
             $invoiceQuery->whereHas('customer', function ($q) use ($selectedAdminId) {
                 $q->where('admin_id', $selectedAdminId);
+            });
+        }
+
+        // Filter by operator_id (for admin & superadmin)
+        if ($selectedOperatorId && in_array($user->role, ['admin', 'superadmin'])) {
+            $invoiceQuery->whereHas('customer', function ($q) use ($selectedOperatorId) {
+                $q->where('operator_id', $selectedOperatorId);
             });
         }
 
@@ -82,6 +90,23 @@ class BillingController extends Controller
         $admins = [];
         if ($user->role == 'superadmin') {
             $admins = User::whereIn('role', ['admin', 'superadmin'])->get(['id', 'name', 'role']);
+        }
+
+        // Build operators list for filter
+        $operators = collect();
+        if ($user->role == 'admin') {
+            // Admin sees their own operators
+            $operators = User::where('role', 'operator')->where('parent_id', $user->id)->get(['id', 'name', 'role']);
+        } elseif ($user->role == 'superadmin') {
+            // Superadmin sees all admins and operators
+            $operatorQuery = User::whereIn('role', ['admin', 'operator']);
+            if ($selectedAdminId) {
+                $operatorQuery->where(function ($q) use ($selectedAdminId) {
+                    $q->where('id', $selectedAdminId)
+                      ->orWhere('parent_id', $selectedAdminId);
+                });
+            }
+            $operators = $operatorQuery->orderBy('role')->orderBy('name')->get(['id', 'name', 'role', 'parent_id']);
         }
 
         // Build a map of customer balances for the view
@@ -121,7 +146,22 @@ class BillingController extends Controller
             ->pluck('total_excess', 'invoice_id')
             ->toArray();
 
-        return view('billing.index', compact('invoices', 'customers', 'month', 'year', 'total_bill', 'paid_bill', 'unpaid_bill', 'admins', 'selectedAdminId', 'customerBalances', 'arrearsByCustomer', 'total_excess_to_balance', 'total_underpayment', 'total_revenue', 'excessByInvoice'));
+        // Build map: who processed payment for each invoice (admin name if different from operator)
+        $paymentAdminByInvoice = [];
+        foreach ($invoices as $inv) {
+            if ($inv->status == 'paid' || $inv->amount_paid > 0) {
+                $lastPayment = $inv->payments->sortByDesc('created_at')->first();
+                if ($lastPayment && $lastPayment->admin) {
+                    $payAdmin = $lastPayment->admin;
+                    // Show label if payment was made by admin/superadmin (not the operator themselves)
+                    if (in_array($payAdmin->role, ['admin', 'superadmin'])) {
+                        $paymentAdminByInvoice[$inv->id] = $payAdmin->name;
+                    }
+                }
+            }
+        }
+
+        return view('billing.index', compact('invoices', 'customers', 'month', 'year', 'total_bill', 'paid_bill', 'unpaid_bill', 'admins', 'selectedAdminId', 'selectedOperatorId', 'operators', 'customerBalances', 'arrearsByCustomer', 'total_excess_to_balance', 'total_underpayment', 'total_revenue', 'excessByInvoice', 'paymentAdminByInvoice'));
     }
 
     public function generate(Request $request)
