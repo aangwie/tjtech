@@ -42,6 +42,15 @@ class CustomerController extends Controller
             $admins = User::whereIn('role', ['admin', 'superadmin'])->get();
         }
 
+        // Hitung total saldo seluruh pelanggan
+        $totalBalance = $customers->sum(function ($c) {
+            return (float) $c->balance;
+        });
+        $totalCustomers = $customers->count();
+        $customersWithBalance = $customers->filter(function ($c) {
+            return (float) $c->balance > 0;
+        })->count();
+
         // Ambil profile dari Mikrotik untuk dropdown 'Tambah User'
         $profiles = [];
         try {
@@ -52,7 +61,7 @@ class CustomerController extends Controller
             // Abaikan error koneksi agar halaman tetap jalan
         }
 
-        return view('customers.index', compact('customers', 'profiles', 'operators', 'admins', 'selectedAdmin'));
+        return view('customers.index', compact('customers', 'profiles', 'operators', 'admins', 'selectedAdmin', 'totalBalance', 'totalCustomers', 'customersWithBalance'));
     }
 
     // 2. Simpan User Baru (Ke DB & Mikrotik)

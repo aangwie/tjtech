@@ -60,6 +60,43 @@
             </div>
         </div>
 
+        <!-- Summary Card: Total Saldo -->
+        <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700/50 p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-green-100 dark:bg-green-900/30">
+                        <i class="fas fa-wallet text-green-600 dark:text-green-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Saldo</p>
+                        <p class="text-xl font-bold text-green-600 dark:text-green-400">Rp {{ number_format($totalBalance, 0, ',', '.') }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700/50 p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/30">
+                        <i class="fas fa-users text-blue-600 dark:text-blue-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Pelanggan</p>
+                        <p class="text-xl font-bold text-slate-800 dark:text-white">{{ $totalCustomers }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700/50 p-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-900/30">
+                        <i class="fas fa-coins text-amber-600 dark:text-amber-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Memiliki Saldo</p>
+                        <p class="text-xl font-bold text-slate-800 dark:text-white">{{ $customersWithBalance }} <span class="text-sm font-normal text-slate-400">pelanggan</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Table Card -->
         <div
             class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700/50 overflow-hidden">

@@ -117,6 +117,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/billing/{id}/print', [BillingController::class, 'print'])->name('billing.print');
     Route::delete('/billing/bulk-destroy', [BillingController::class, 'bulkDestroy'])->name('billing.bulkDestroy');
     Route::post('/billing/bulk-update-due-date', [BillingController::class, 'bulkUpdateDueDate'])->name('billing.bulkUpdateDueDate');
+    Route::post('/billing/rollback-generate', [BillingController::class, 'rollbackGenerate'])->name('billing.rollbackGenerate');
     Route::delete('/billing/{id}', [BillingController::class, 'destroy'])->name('billing.destroy');
 
     // Report
