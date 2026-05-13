@@ -107,6 +107,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/billing/{id}/pay-ajax', [BillingController::class, 'processPaymentAjax'])->name('billing.payAjax');
     Route::post('/billing/{id}/pay-method', [BillingController::class, 'payWithMethod'])->name('billing.payMethod');
     Route::get('/billing/{id}/info', [BillingController::class, 'getInvoiceInfo'])->name('billing.info');
+    Route::get('/billing/{id}/payments', [BillingController::class, 'getPaymentDetails'])->name('billing.payments');
+    Route::post('/billing/payment/{paymentId}/cancel', [BillingController::class, 'cancelSinglePayment'])->name('billing.cancelSinglePayment');
 
     Route::post('/billing/{id}/cancel', [BillingController::class, 'cancelPayment'])->name('billing.cancel');
     Route::post('/billing/store', [BillingController::class, 'store'])->name('billing.store');

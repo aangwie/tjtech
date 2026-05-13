@@ -26,13 +26,11 @@ class AccountingController extends Controller
 
         $invoiceIds = $invoices->pluck('id')->toArray();
 
-        // Pendapatan = pembayaran manual + kelebihan yang masuk saldo (sama dengan card Pendapatan di /billing)
+        // Pendapatan = total pembayaran manual (sama dengan card Pendapatan di /billing)
         $paidBill = BillingPayment::whereIn('invoice_id', $invoiceIds)
             ->where('method', 'manual')
             ->sum('amount');
-        $excessToBalance = BillingPayment::whereIn('invoice_id', $invoiceIds)
-            ->sum('excess_to_balance');
-        $totalRevenue = (float) $paidBill + (float) $excessToBalance;
+        $totalRevenue = (float) $paidBill;
 
         // 2. HITUNG PENGELUARAN
         $expenses = Expense::whereMonth('transaction_date', $month)

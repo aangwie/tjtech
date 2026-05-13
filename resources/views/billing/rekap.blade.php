@@ -64,14 +64,25 @@
         <!-- Stats Baris 1: Per Periode (Bulan/Tahun) -->
         <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div
-                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 shadow-lg shadow-emerald-500/20 text-white hover:shadow-xl transition-shadow group">
-                <dt class="truncate text-xs font-medium text-emerald-100">Sudah Dibayar (Manual)</dt>
+                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 shadow-lg shadow-amber-500/20 text-white hover:shadow-xl transition-shadow group">
+                <dt class="truncate text-xs font-medium text-amber-100">Kurang Bayar</dt>
                 <dd class="mt-2 text-2xl font-bold tracking-tight text-white">
-                    Rp {{ number_format($periodPaidBill, 0, ',', '.') }}
+                    Rp {{ number_format($periodUnderpayment, 0, ',', '.') }}
                 </dd>
                 <div
                     class="absolute right-4 top-4 text-white/10 group-hover:text-white/20 transition-all transform group-hover:scale-110">
-                    <i class="fas fa-check-circle fa-2x"></i>
+                    <i class="fas fa-money-bill-wave fa-2x"></i>
+                </div>
+            </div>
+            <div
+                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-500 to-pink-600 p-5 shadow-lg shadow-fuchsia-500/20 text-white hover:shadow-xl transition-shadow group">
+                <dt class="truncate text-xs font-medium text-fuchsia-100">Dibayar Manual</dt>
+                <dd class="mt-2 text-2xl font-bold tracking-tight text-white">
+                    Rp {{ number_format($periodDibayarManual, 0, ',', '.') }}
+                </dd>
+                <div
+                    class="absolute right-4 top-4 text-white/10 group-hover:text-white/20 transition-all transform group-hover:scale-110">
+                    <i class="fas fa-hand-holding-usd fa-2x"></i>
                 </div>
             </div>
             <div
@@ -86,25 +97,14 @@
                 </div>
             </div>
             <div
-                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-500 to-pink-600 p-5 shadow-lg shadow-fuchsia-500/20 text-white hover:shadow-xl transition-shadow group">
-                <dt class="truncate text-xs font-medium text-fuchsia-100">Pendapatan</dt>
+                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 shadow-lg shadow-emerald-500/20 text-white hover:shadow-xl transition-shadow group">
+                <dt class="truncate text-xs font-medium text-emerald-100">Pendapatan</dt>
                 <dd class="mt-2 text-2xl font-bold tracking-tight text-white">
                     Rp {{ number_format($periodRevenue, 0, ',', '.') }}
                 </dd>
                 <div
                     class="absolute right-4 top-4 text-white/10 group-hover:text-white/20 transition-all transform group-hover:scale-110">
-                    <i class="fas fa-hand-holding-usd fa-2x"></i>
-                </div>
-            </div>
-            <div
-                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 shadow-lg shadow-amber-500/20 text-white hover:shadow-xl transition-shadow group">
-                <dt class="truncate text-xs font-medium text-amber-100">Kurang Bayar</dt>
-                <dd class="mt-2 text-2xl font-bold tracking-tight text-white">
-                    Rp {{ number_format($periodUnderpayment, 0, ',', '.') }}
-                </dd>
-                <div
-                    class="absolute right-4 top-4 text-white/10 group-hover:text-white/20 transition-all transform group-hover:scale-110">
-                    <i class="fas fa-money-bill-wave fa-2x"></i>
+                    <i class="fas fa-check-circle fa-2x"></i>
                 </div>
             </div>
         </div>

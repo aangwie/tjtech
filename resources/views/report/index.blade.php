@@ -37,7 +37,7 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <!-- Total Tagihan (Omset) -->
         <div
             class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-6 shadow-md text-white">
@@ -74,6 +74,19 @@
             <p class="mt-1 text-xs text-amber-100 opacity-80">{{ $jumlahBelumLunas }} Pelanggan Belum Lunas</p>
             <div class="absolute right-4 top-4 text-white opacity-20">
                 <i class="fas fa-money-bill-wave fa-3x"></i>
+            </div>
+        </div>
+
+        <!-- Kelebihan → Saldo -->
+        <div
+            class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 p-6 shadow-md text-white">
+            <dt class="truncate text-sm font-medium text-cyan-100 uppercase tracking-wider">Kelebihan → Saldo</dt>
+            <dd class="mt-2 text-3xl font-bold tracking-tight">
+                Rp {{ number_format($totalSaldo, 0, ',', '.') }}
+            </dd>
+            <p class="mt-1 text-xs text-cyan-100 opacity-80">Kelebihan bayar masuk saldo</p>
+            <div class="absolute right-4 top-4 text-white opacity-20">
+                <i class="fas fa-wallet fa-3x"></i>
             </div>
         </div>
     </div>

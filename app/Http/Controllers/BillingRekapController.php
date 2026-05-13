@@ -49,11 +49,17 @@ class BillingRekapController extends Controller
         $periodExcessToBalance = BillingPayment::whereIn('invoice_id', $invoiceIdsAll)
             ->sum('excess_to_balance');
 
-        // Pendapatan = pembayaran manual + kelebihan yang masuk saldo
-        $periodRevenue = (float) $periodPaidBill + (float) $periodExcessToBalance;
+        // Dibayar Manual (net) = pembayaran manual - kelebihan yang masuk saldo
+        $periodDibayarManual = (float) $periodPaidBill - (float) $periodExcessToBalance;
 
-        // Kurang Bayar (underpayment dari invoice unpaid periode ini)
-        $periodUnderpayment = $invoices->where('status', 'unpaid')->sum('underpayment');
+        // Pendapatan = total pembayaran manual
+        $periodRevenue = (float) $periodPaidBill;
+
+        // Kurang Bayar (outstanding dari invoice unpaid periode ini)
+        $periodUnderpayment = $invoices->where('status', 'unpaid')->sum(function ($inv) {
+            $price = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
+            return max(0, $price - (float) $inv->amount_paid);
+        });
 
         // =============================================
         // CARD BARIS 2: Data Grand Total (Semua Periode)
@@ -80,7 +86,7 @@ class BillingRekapController extends Controller
             $totalBayar = $customer->invoices->where('status', 'paid')->sum('amount_paid');
             $totalKurangBayar = $customer->invoices->where('status', 'unpaid')->sum(function ($inv) use ($customer) {
                 $price = $inv->price > 0 ? $inv->price : ($customer->monthly_price ?? 0);
-                return $price - ($inv->amount_paid ?? 0) - ($inv->carried_underpayment ?? 0);
+                return max(0, $price - (float) ($inv->amount_paid ?? 0));
             });
 
             $grandTotalTagihan += $totalTagihan;
@@ -99,6 +105,7 @@ class BillingRekapController extends Controller
             'year',
             'periodPaidBill',
             'periodExcessToBalance',
+            'periodDibayarManual',
             'periodRevenue',
             'periodUnderpayment',
             'grandTotalTagihan',
