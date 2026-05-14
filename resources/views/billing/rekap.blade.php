@@ -118,7 +118,7 @@
         </div>
 
         <!-- Stats Baris 2: Grand Total (Semua Periode) -->
-        <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div
                 class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-5 shadow-lg shadow-indigo-500/20 text-white hover:shadow-xl transition-shadow group">
                 <dt class="truncate text-xs font-medium text-indigo-100">Total Tagihan (Semua Periode)</dt>
@@ -143,24 +143,13 @@
             </div>
             <div
                 class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 p-5 shadow-lg shadow-blue-500/20 text-white hover:shadow-xl transition-shadow group">
-                <dt class="truncate text-xs font-medium text-blue-100">Total Saldo Pelanggan</dt>
+                <dt class="truncate text-xs font-medium text-blue-100">Total Dibayar Pakai Saldo</dt>
                 <dd class="mt-2 text-2xl font-bold tracking-tight text-white">
-                    Rp {{ number_format($grandTotalSaldo, 0, ',', '.') }}
+                    Rp {{ number_format($grandTotalDibayarSaldo, 0, ',', '.') }}
                 </dd>
                 <div
                     class="absolute right-4 top-4 text-white/10 group-hover:text-white/20 transition-all transform group-hover:scale-110">
                     <i class="fas fa-wallet fa-2x"></i>
-                </div>
-            </div>
-            <div
-                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 p-5 shadow-lg shadow-orange-500/20 text-white hover:shadow-xl transition-shadow group">
-                <dt class="truncate text-xs font-medium text-orange-100">Total Kurang Bayar</dt>
-                <dd class="mt-2 text-2xl font-bold tracking-tight text-white">
-                    Rp {{ number_format($grandTotalKurangBayar, 0, ',', '.') }}
-                </dd>
-                <div
-                    class="absolute right-4 top-4 text-white/10 group-hover:text-white/20 transition-all transform group-hover:scale-110">
-                    <i class="fas fa-exclamation-triangle fa-2x"></i>
                 </div>
             </div>
         </div>

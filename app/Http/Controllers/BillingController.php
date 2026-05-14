@@ -966,7 +966,7 @@ class BillingController extends Controller
                     $pppoeUsername = $customer->pppoe_username;
                     if ($this->mikrotik->isConnected()) {
                         $this->mikrotik->setSecretStatus($pppoeUsername, 'disabled');
-                        $this->mikrotik->kickUser($pppoeUsername);
+                        // Tidak kick koneksi aktif pelanggan
                     }
                 } catch (\Exception $e) {
                     // Log but don't fail
@@ -1059,7 +1059,7 @@ class BillingController extends Controller
         try {
             if ($this->mikrotik->isConnected()) {
                 $this->mikrotik->setSecretStatus($pppoeUsername, 'enabled');
-                $this->mikrotik->kickUser($pppoeUsername);
+                // Tidak kick koneksi aktif pelanggan
             }
         } catch (\Exception $e) {
             // Log but don't fail
@@ -1134,7 +1134,7 @@ class BillingController extends Controller
             try {
                 if ($this->mikrotik->isConnected()) {
                     $this->mikrotik->setSecretStatus($userPppoe, 'enabled');
-                    $this->mikrotik->kickUser($userPppoe);
+                    // Tidak kick koneksi aktif pelanggan
                     $pesanMikrotik = "Mikrotik: Enabled.";
                 } else {
                     $pesanMikrotik = "Mikrotik: Gagal Konek.";
@@ -1211,7 +1211,7 @@ class BillingController extends Controller
         try {
             if ($this->mikrotik->isConnected()) {
                 $this->mikrotik->setSecretStatus($userPppoe, 'enabled');
-                $this->mikrotik->kickUser($userPppoe);
+                // Tidak kick koneksi aktif pelanggan
                 $pesanMikrotik = "Mikrotik: Enabled.";
             } else {
                 $pesanMikrotik = "Mikrotik: Gagal Konek.";
@@ -1317,7 +1317,7 @@ class BillingController extends Controller
         try {
             if ($this->mikrotik->isConnected()) {
                 $this->mikrotik->setSecretStatus($userPppoe, 'disabled');
-                $this->mikrotik->kickUser($userPppoe);
+                // Tidak kick koneksi aktif pelanggan
                 $pesanMikrotik = "Mikrotik: Disabled.";
             }
         } catch (\Exception $e) {
