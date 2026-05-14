@@ -870,6 +870,33 @@
             color: #000080 !important;
             font-weight: 600;
         }
+
+        /* Dark mode: Select2 search input text color (maroon red) */
+        .dark .select2-container--default .select2-search--inline .select2-search__field,
+        .dark .select2-container--default .select2-search--dropdown .select2-search__field {
+            color: #ffffffff !important;
+            background-color: #1e293b !important;
+        }
+        .dark .select2-container--default .select2-selection--multiple {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+        .dark .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            color: #ffffffff !important;
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+        }
+        .dark .select2-dropdown {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+        .dark .select2-results__option {
+            color: #e2e8f0 !important;
+        }
+        .dark .select2-results__option--highlighted {
+            background-color: #334155 !important;
+            color: #f8fafc !important;
+        }
     </style>
     <script>
             function whatsappGateway()               {
