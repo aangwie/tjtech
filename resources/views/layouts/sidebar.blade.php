@@ -59,7 +59,7 @@
             @if(auth()->user()->isSuperAdmin())
                 <a href="{{ route('control.index') }}"
                     class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                    {{ request()->routeIs('control.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                        {{ request()->routeIs('control.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                     :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                     <i
                         class="fas fa-hammer w-5 text-center flex-shrink-0 {{ request()->routeIs('control.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -87,7 +87,7 @@
             @if(auth()->user()->role == 'admin')
                 <a href="{{ route('plans.public') }}"
                     class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                    {{ request()->routeIs('plans.public') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                        {{ request()->routeIs('plans.public') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                     :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                     <i
                         class="fas fa-box w-5 text-center flex-shrink-0 {{ request()->routeIs('plans.public') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -98,86 +98,86 @@
                 </a>
             @endif
 
-            {{-- SECTION: Pelanggan & Kasir --}}
+            {{-- SECTION: Manajemen Utama --}}
             @if(auth()->user()->role == 'operator' || auth()->user()->isSuperAdmin() || auth()->user()->isAdmin())
                 <div class="pt-4 pb-1" :class="sidebarCollapsed ? 'lg:pt-3 lg:pb-0' : ''">
                     <p class="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest"
-                        :class="sidebarCollapsed ? 'lg:hidden' : ''">Pelanggan & Kasir</p>
+                        :class="sidebarCollapsed ? 'lg:hidden' : ''">Manajemen Utama</p>
                     <div x-show="sidebarCollapsed"
                         class="hidden lg:block border-t border-slate-200 dark:border-slate-700 mx-2" style="display:none;">
                     </div>
                 </div>
 
-                @if(auth()->user()->role == 'operator' || auth()->user()->isSuperAdmin() || auth()->user()->isAdmin())
-                    <a href="{{ route('customers.index') }}"
-                        class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('customers.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                {{-- Manajemen submenu --}}
+                <div
+                    x-data="{ open: {{ request()->routeIs('customers.*') || request()->routeIs('billing.*') || request()->routeIs('accounting.*') || request()->routeIs('report.*') ? 'true' : 'false' }} }">
+                    <button
+                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }"
+                        type="button"
+                        class="group relative w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+                                                                            {{ request()->routeIs('customers.*') || request()->routeIs('billing.*') || request()->routeIs('accounting.*') || request()->routeIs('report.*') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
                         :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
-                        <i
-                            class="fas fa-users w-5 text-center flex-shrink-0 {{ request()->routeIs('customers.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
-                        <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Data Pelanggan</span>
+                        <span class="flex items-center gap-3">
+                            <i
+                                class="fas fa-folder-open w-5 text-center flex-shrink-0 {{ request()->routeIs('customers.*') || request()->routeIs('billing.*') || request()->routeIs('accounting.*') || request()->routeIs('report.*') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
+                            <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Manajemen</span>
+                        </span>
+                        <i class="fas fa-chevron-down text-[10px] text-slate-400 transition-transform duration-200"
+                            :class="[{ 'rotate-180': open }, sidebarCollapsed ? 'lg:hidden' : '']"></i>
                         <span x-show="sidebarCollapsed"
                             class="hidden lg:block absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
-                            style="display:none;">Data Pelanggan</span>
-                    </a>
+                            style="display:none;">Manajemen</span>
+                    </button>
+                    <div x-show="open && (!sidebarCollapsed || window.innerWidth < 1024)" x-collapse
+                        class="ml-5 mt-1 space-y-0.5 border-l-2 border-slate-200 dark:border-slate-700 pl-3">
 
-                    <a href="{{ route('billing.index') }}"
-                        class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('billing.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
-                        :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
-                        <i
-                            class="fas fa-file-invoice-dollar w-5 text-center flex-shrink-0 {{ request()->routeIs('billing.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
-                        <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Tagihan</span>
-                        <span x-show="sidebarCollapsed"
-                            class="hidden lg:block absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
-                            style="display:none;">Tagihan</span>
-                    </a>
+                        @if(auth()->user()->role == 'operator' || auth()->user()->isSuperAdmin() || auth()->user()->isAdmin())
+                            <a href="{{ route('customers.index') }}"
+                                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
+                                                                                                                        {{ request()->routeIs('customers.*') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                <i class="fas fa-users w-4 text-center text-xs"></i>
+                                Data Pelanggan
+                            </a>
 
-                    <a href="{{ route('billing.rekap') }}"
-                        class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('billing.rekap') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
-                        :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
-                        <i
-                            class="fas fa-chart-bar w-5 text-center flex-shrink-0 {{ request()->routeIs('billing.rekap') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
-                        <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Rekap Tagihan</span>
-                        <span x-show="sidebarCollapsed"
-                            class="hidden lg:block absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
-                            style="display:none;">Rekap Tagihan</span>
-                    </a>
-                @endif
+                            <a href="{{ route('billing.index') }}"
+                                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
+                                                                                                                        {{ request()->routeIs('billing.index') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                <i class="fas fa-file-invoice-dollar w-4 text-center text-xs"></i>
+                                Tagihan
+                            </a>
 
-                @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
-                    <a href="{{ route('accounting.index') }}"
-                        class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('accounting.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
-                        :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
-                        <i
-                            class="fas fa-money-bill-wave w-5 text-center flex-shrink-0 {{ request()->routeIs('accounting.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
-                        <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Biaya & Pengeluaran</span>
-                        <span x-show="sidebarCollapsed"
-                            class="hidden lg:block absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
-                            style="display:none;">Biaya & Pengeluaran</span>
-                    </a>
+                            <a href="{{ route('billing.rekap') }}"
+                                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
+                                                                                                                        {{ request()->routeIs('billing.rekap') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                <i class="fas fa-chart-bar w-4 text-center text-xs"></i>
+                                Rekap Tagihan
+                            </a>
+                        @endif
 
-                    <a href="{{ route('report.index') }}"
-                        class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('report.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
-                        :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
-                        <i
-                            class="fas fa-print w-5 text-center flex-shrink-0 {{ request()->routeIs('report.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
-                        <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Laporan Keuangan</span>
-                        <span x-show="sidebarCollapsed"
-                            class="hidden lg:block absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
-                            style="display:none;">Laporan Keuangan</span>
-                    </a>
-                @endif
+                        @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
+                            <a href="{{ route('accounting.index') }}"
+                                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
+                                                                                                                        {{ request()->routeIs('accounting.*') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                <i class="fas fa-money-bill-wave w-4 text-center text-xs"></i>
+                                Biaya & Pengeluaran
+                            </a>
+
+                            <a href="{{ route('report.index') }}"
+                                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
+                                                                                                                        {{ request()->routeIs('report.*') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                <i class="fas fa-print w-4 text-center text-xs"></i>
+                                Laporan Keuangan
+                            </a>
+                        @endif
+                    </div>
+                </div>
             @endif
 
             {{-- SECTION: Hotspot --}}
             @if(auth()->user()->isAdmin() || auth()->user()->role == 'operator' || auth()->user()->isSuperAdmin())
                 <div class="pt-4 pb-1" :class="sidebarCollapsed ? 'lg:pt-3 lg:pb-0' : ''">
                     <p class="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest"
-                        :class="sidebarCollapsed ? 'lg:hidden' : ''">Hotspot & Monitor</p>
+                        :class="sidebarCollapsed ? 'lg:hidden' : ''">MIKROTIK</p>
                     <div x-show="sidebarCollapsed"
                         class="hidden lg:block border-t border-slate-200 dark:border-slate-700 mx-2" style="display:none;">
                     </div>
@@ -185,9 +185,11 @@
 
                 {{-- Hotspot submenu --}}
                 <div x-data="{ open: {{ request()->routeIs('hotspot.*') ? 'true' : 'false' }} }">
-                    <button @click="open = !open" type="button"
+                    <button
+                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }"
+                        type="button"
                         class="group relative w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                        {{ request()->routeIs('hotspot.*') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
+                                                                            {{ request()->routeIs('hotspot.*') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
                         :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                         <span class="flex items-center gap-3">
                             <i
@@ -204,13 +206,13 @@
                         class="ml-5 mt-1 space-y-0.5 border-l-2 border-slate-200 dark:border-slate-700 pl-3">
                         <a href="{{ route('hotspot.monitor') }}"
                             class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
-                                            {{ request()->routeIs('hotspot.monitor') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                                                                {{ request()->routeIs('hotspot.monitor') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
                             <i class="fas fa-desktop w-4 text-center text-xs"></i>
                             Monitor
                         </a>
                         <a href="{{ route('hotspot.generate') }}"
                             class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
-                                            {{ request()->routeIs('hotspot.generate') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                                                                {{ request()->routeIs('hotspot.generate') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
                             <i class="fas fa-user-plus w-4 text-center text-xs"></i>
                             Generate Akun
                         </a>
@@ -220,9 +222,11 @@
                 {{-- Monitor submenu --}}
                 <div
                     x-data="{ open: {{ request()->routeIs('monitor.*') || request()->routeIs('pppoe.dashboard') ? 'true' : 'false' }} }">
-                    <button @click="open = !open" type="button"
+                    <button
+                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }"
+                        type="button"
                         class="group relative w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                        {{ request()->routeIs('monitor.*') || request()->routeIs('pppoe.dashboard') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
+                                                                            {{ request()->routeIs('monitor.*') || request()->routeIs('pppoe.dashboard') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
                         :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                         <span class="flex items-center gap-3">
                             <i
@@ -239,45 +243,35 @@
                         class="ml-5 mt-1 space-y-0.5 border-l-2 border-slate-200 dark:border-slate-700 pl-3">
                         <a href="{{ route('pppoe.dashboard') }}"
                             class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
-                                        {{ request()->routeIs('pppoe.dashboard') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                                                            {{ request()->routeIs('pppoe.dashboard') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
                             <i class="fas fa-tachometer-alt w-4 text-center text-xs"></i>
                             PPPoE Monitoring
                         </a>
                         <a href="{{ route('monitor.dhcp-leases') }}"
                             class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
-                                            {{ request()->routeIs('monitor.dhcp-leases') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                                                                {{ request()->routeIs('monitor.dhcp-leases') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
                             <i class="fas fa-network-wired w-4 text-center text-xs"></i>
                             DHCP Leases
                         </a>
                         <a href="{{ route('monitor.static-users') }}"
                             class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
-                                            {{ request()->routeIs('monitor.static-users') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                                                                {{ request()->routeIs('monitor.static-users') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
                             <i class="fas fa-user-tag w-4 text-center text-xs"></i>
                             Static Users
                         </a>
                         <a href="{{ route('monitor.simple-queues') }}"
                             class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
-                                            {{ request()->routeIs('monitor.simple-queues') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                                                                {{ request()->routeIs('monitor.simple-queues') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
                             <i class="fas fa-stream w-4 text-center text-xs"></i>
                             Simple Queues
                         </a>
                     </div>
                 </div>
             @endif
-
-            {{-- SECTION: Sistem (Admin & Superadmin) --}}
             @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
-                <div class="pt-4 pb-1" :class="sidebarCollapsed ? 'lg:pt-3 lg:pb-0' : ''">
-                    <p class="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest"
-                        :class="sidebarCollapsed ? 'lg:hidden' : ''">Sistem</p>
-                    <div x-show="sidebarCollapsed"
-                        class="hidden lg:block border-t border-slate-200 dark:border-slate-700 mx-2" style="display:none;">
-                    </div>
-                </div>
-
                 <a href="{{ route('traffic.index') }}"
                     class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                    {{ request()->routeIs('traffic.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                        {{ request()->routeIs('traffic.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                     :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                     <i
                         class="fas fa-chart-area w-5 text-center flex-shrink-0 {{ request()->routeIs('traffic.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -289,7 +283,7 @@
 
                 <a href="{{ route('router.index') }}"
                     class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                    {{ request()->routeIs('router.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                        {{ request()->routeIs('router.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                     :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                     <i
                         class="fas fa-network-wired w-5 text-center flex-shrink-0 {{ request()->routeIs('router.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -299,9 +293,63 @@
                         style="display:none;">Router Mikrotik</span>
                 </a>
 
+                {{-- Manajemen Aset submenu --}}
+                <div class="pt-4 pb-1" :class="sidebarCollapsed ? 'lg:pt-3 lg:pb-0' : ''">
+                    <p class="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest"
+                        :class="sidebarCollapsed ? 'lg:hidden' : ''">Manajemen Aset</p>
+                    <div x-show="sidebarCollapsed"
+                        class="hidden lg:block border-t border-slate-200 dark:border-slate-700 mx-2" style="display:none;">
+                    </div>
+                </div>
+                <div x-data="{ open: {{ request()->routeIs('asset.*') ? 'true' : 'false' }} }">
+                    <button
+                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }"
+                        type="button"
+                        class="group relative w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+                                                                            {{ request()->routeIs('asset.*') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
+                        :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
+                        <span class="flex items-center gap-3">
+                            <i
+                                class="fas fa-boxes w-5 text-center flex-shrink-0 {{ request()->routeIs('asset.*') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
+                            <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Manajemen Aset</span>
+                        </span>
+                        <i class="fas fa-chevron-down text-[10px] text-slate-400 transition-transform duration-200"
+                            :class="[{ 'rotate-180': open }, sidebarCollapsed ? 'lg:hidden' : '']"></i>
+                        <span x-show="sidebarCollapsed"
+                            class="hidden lg:block absolute left-full ml-3 px-2 py-1 text-xs font-medium text-white bg-slate-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50"
+                            style="display:none;">Manajemen Aset</span>
+                    </button>
+
+                    <div x-show="open && (!sidebarCollapsed || window.innerWidth < 1024)" x-collapse
+                        class="ml-5 mt-1 space-y-0.5 border-l-2 border-slate-200 dark:border-slate-700 pl-3">
+                        <a href="{{ route('asset.index') }}"
+                            class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
+                                                                                {{ request()->routeIs('asset.index') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                            <i class="fas fa-box w-4 text-center text-xs"></i>
+                            Data Aset
+                        </a>
+                        <a href="{{ route('asset.report') }}"
+                            class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
+                                                                                {{ request()->routeIs('asset.report') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                            <i class="fas fa-file-pdf w-4 text-center text-xs"></i>
+                            Laporan Aset
+                        </a>
+                    </div>
+                </div>
+            @endif
+
+            {{-- SECTION: Sistem (Admin & Superadmin) --}}
+            @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
+                <div class="pt-4 pb-1" :class="sidebarCollapsed ? 'lg:pt-3 lg:pb-0' : ''">
+                    <p class="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest"
+                        :class="sidebarCollapsed ? 'lg:hidden' : ''">Pengaturan</p>
+                    <div x-show="sidebarCollapsed"
+                        class="hidden lg:block border-t border-slate-200 dark:border-slate-700 mx-2" style="display:none;">
+                    </div>
+                </div>
                 <a href="{{ route('company.index') }}"
                     class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                    {{ request()->routeIs('company.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                        {{ request()->routeIs('company.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                     :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                     <i
                         class="fas fa-building w-5 text-center flex-shrink-0 {{ request()->routeIs('company.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -313,7 +361,7 @@
 
                 <a href="{{ route('users.index') }}"
                     class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                    {{ request()->routeIs('users.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                        {{ request()->routeIs('users.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                     :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                     <i
                         class="fas fa-user-shield w-5 text-center flex-shrink-0 {{ request()->routeIs('users.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -325,7 +373,7 @@
 
                 <a href="{{ route('whatsapp.index') }}"
                     class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                    {{ request()->routeIs('whatsapp.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                        {{ request()->routeIs('whatsapp.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                     :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                     <i
                         class="fab fa-whatsapp w-5 text-center flex-shrink-0 {{ request()->routeIs('whatsapp.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -338,7 +386,7 @@
                 @if(auth()->user()->isSuperAdmin())
                     <a href="{{ route('mail.index') }}"
                         class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('mail.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                                                                                    {{ request()->routeIs('mail.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                         :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                         <i
                             class="fas fa-mail-bulk w-5 text-center flex-shrink-0 {{ request()->routeIs('mail.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -350,7 +398,7 @@
 
                     <a href="{{ route('plans.index') }}"
                         class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('plans.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                                                                                    {{ request()->routeIs('plans.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                         :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                         <i
                             class="fas fa-box-open w-5 text-center flex-shrink-0 {{ request()->routeIs('plans.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -362,7 +410,7 @@
 
                     <a href="{{ route('payment.index') }}"
                         class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('payment.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                                                                                    {{ request()->routeIs('payment.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                         :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                         <i
                             class="fas fa-credit-card w-5 text-center flex-shrink-0 {{ request()->routeIs('payment.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -374,7 +422,7 @@
 
                     <a href="{{ route('site.index') }}"
                         class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('site.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                                                                                    {{ request()->routeIs('site.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                         :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                         <i
                             class="fas fa-cog w-5 text-center flex-shrink-0 {{ request()->routeIs('site.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
@@ -386,7 +434,7 @@
 
                     <a href="{{ route('system.index') }}"
                         class="group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                                                            {{ request()->routeIs('system.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
+                                                                                                                                    {{ request()->routeIs('system.index') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300 border-l-[3px] border-[#352f99]' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white' }}"
                         :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                         <i
                             class="fas fa-sync w-5 text-center flex-shrink-0 {{ request()->routeIs('system.index') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>

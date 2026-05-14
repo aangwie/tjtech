@@ -24,7 +24,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SiteSettingController;
 use App\Http\Controllers\ControlController;
 use App\Http\Controllers\DashboardController;
-
+use App\Http\Controllers\AssetController;
 
 
 /*
@@ -171,6 +171,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/accounting/expense', [AccountingController::class, 'storeExpense'])->name('accounting.store');
         Route::delete('/accounting/expense/{id}', [AccountingController::class, 'destroyExpense'])->name('accounting.destroy');
         Route::get('/accounting/print', [AccountingController::class, 'print'])->name('accounting.print');
+
+        // MANAJEMEN ASET
+        Route::get('/asset', [AssetController::class, 'index'])->name('asset.index');
+        Route::post('/asset', [AssetController::class, 'store'])->name('asset.store');
+        Route::put('/asset/{id}', [AssetController::class, 'update'])->name('asset.update');
+        Route::delete('/asset/{id}', [AssetController::class, 'destroy'])->name('asset.destroy');
+        Route::get('/asset/laporan', [AssetController::class, 'report'])->name('asset.report');
+        Route::post('/asset/laporan/cetak', [AssetController::class, 'printReport'])->name('asset.print');
 
         // TRAFFIC MONITOR
         Route::get('/traffic', [TrafficController::class, 'index'])->name('traffic.index');
