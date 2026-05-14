@@ -1125,8 +1125,29 @@ class BillingController extends Controller
                 }
             }
 
+            $displayPrice = $invoice->price > 0 ? $invoice->price : ($customer->monthly_price ?? 0);
+            $remainingToPay = max(0, $displayPrice - (float) $invoice->amount_paid);
+
             // Update Database
-            $invoice->update(['status' => 'paid']);
+            $invoice->update([
+                'status' => 'paid',
+                'amount_paid' => $displayPrice,
+                'underpayment' => 0,
+                'payment_method' => 'manual',
+                'paid_at' => now(),
+            ]);
+
+            \App\Models\BillingPayment::create([
+                'invoice_id' => $invoice->id,
+                'customer_id' => $customer->id,
+                'admin_id' => Auth::id(),
+                'amount' => $remainingToPay,
+                'method' => 'manual',
+                'balance_used' => 0,
+                'excess_to_balance' => 0,
+                'notes' => 'Pembayaran massal (Bayar Sekaligus)',
+            ]);
+
             $customer->update(['is_active' => true]);
 
             // Eksekusi Mikrotik
@@ -1202,8 +1223,29 @@ class BillingController extends Controller
             }
         }
 
+        $displayPrice = $invoice->price > 0 ? $invoice->price : ($customer->monthly_price ?? 0);
+        $remainingToPay = max(0, $displayPrice - (float) $invoice->amount_paid);
+
         // Update Database
-        $invoice->update(['status' => 'paid']);
+        $invoice->update([
+            'status' => 'paid',
+            'amount_paid' => $displayPrice,
+            'underpayment' => 0,
+            'payment_method' => 'manual',
+            'paid_at' => now(),
+        ]);
+
+        \App\Models\BillingPayment::create([
+            'invoice_id' => $invoice->id,
+            'customer_id' => $customer->id,
+            'admin_id' => Auth::id(),
+            'amount' => $remainingToPay,
+            'method' => 'manual',
+            'balance_used' => 0,
+            'excess_to_balance' => 0,
+            'notes' => 'Pembayaran manual (Direct)',
+        ]);
+
         $customer->update(['is_active' => true]);
 
         // Eksekusi Mikrotik

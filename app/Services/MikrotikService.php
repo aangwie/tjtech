@@ -10,29 +10,39 @@ use App\Models\RouterSetting;
 
 class MikrotikService
 {
-    protected $client;
+    protected $client = null;
+    protected $config = null;
+    protected $connectionAttempted = false;
 
     public function __construct()
     {
+        // AMBIL YANG STATUSNYA AKTIF
+        $this->config = RouterSetting::where('is_active', true)->first();
+
+        // Jika tidak ada yang aktif, ambil yang pertama saja (fallback)
+        if (!$this->config) {
+            $this->config = RouterSetting::first();
+        }
+    }
+
+    protected function connect()
+    {
+        if ($this->connectionAttempted) {
+            return;
+        }
+        $this->connectionAttempted = true;
+
+        if (!$this->config) {
+            $this->client = null;
+            return;
+        }
+
         try {
-            // AMBIL YANG STATUSNYA AKTIF
-            $config = RouterSetting::where('is_active', true)->first();
-
-            // Jika tidak ada yang aktif, ambil yang pertama saja (fallback)
-            if (!$config) {
-                $config = RouterSetting::first();
-            }
-
-            if (!$config) {
-                $this->client = null;
-                return;
-            }
-
             $this->client = new Client([
-                'host' => $config->host,
-                'user' => $config->username,
-                'pass' => $config->password,
-                'port' => (int) $config->port,
+                'host' => $this->config->host,
+                'user' => $this->config->username,
+                'pass' => $this->config->password,
+                'port' => (int) $this->config->port,
                 'timeout' => 10,
             ]);
         } catch (ConnectException | ClientException $e) {
@@ -43,11 +53,13 @@ class MikrotikService
     // Cek status koneksi
     public function isConnected()
     {
+        $this->connect();
         return $this->client !== null;
     }
 
     public function getClient()
     {
+        $this->connect();
         return $this->client;
     }
 
