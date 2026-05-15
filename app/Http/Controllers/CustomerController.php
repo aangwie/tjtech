@@ -138,11 +138,16 @@ class CustomerController extends Controller
         ]);
 
         try {
-            // 1. Update ke Mikrotik (Sinkronisasi Profile)
-            // Kita hanya update profile, username/password biarkan tetap (kecuali mau fitur ganti pass juga)
-            $this->mikrotik->updateSecret($customer->pppoe_username, [
+            // 1. Update ke Mikrotik (Sinkronisasi Profile dan Status)
+            $mikrotikData = [
                 'profile' => $request->profile
-            ]);
+            ];
+
+            if ($request->has('is_active')) {
+                $mikrotikData['disabled'] = $request->is_active ? 'false' : 'true';
+            }
+
+            $this->mikrotik->updateSecret($customer->pppoe_username, $mikrotikData);
 
             // 2. Update Database Lokal
             $customer->update([
@@ -156,6 +161,7 @@ class CustomerController extends Controller
                 'longitude' => $request->longitude,
                 'profile' => $request->profile,
                 'notes' => $request->notes,
+                'is_active' => $request->has('is_active') ? (bool) $request->is_active : $customer->is_active,
             ]);
 
             return back()->with('success', 'Data pelanggan & Paket Internet (Profile) berhasil diperbarui.');

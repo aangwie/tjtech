@@ -137,7 +137,7 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 align-middle">
-                                    <div class="font-medium text-slate-900 dark:text-white">{{ $c->name }}</div>
+                                    <div class="font-medium {{ $c->is_active ? 'text-slate-900 dark:text-white' : 'text-red-600 dark:text-red-400' }}">{{ $c->name }}</div>
                                     <div class="text-xs text-slate-500 dark:text-slate-400 flex flex-col gap-0.5">
                                         <div class="flex items-center gap-1">
                                             <i class="fas fa-user-circle"></i> {{ $c->pppoe_username }}
@@ -197,7 +197,7 @@
                                             data-price="{{ $c->monthly_price }}" data-operator="{{ $c->operator_id }}"
                                             data-address="{{ $c->address }}" data-lat="{{ $c->latitude }}"
                                             data-lng="{{ $c->longitude }}" data-profile="{{ $c->profile }}"
-                                            data-notes="{{ $c->notes }}">
+                                            data-notes="{{ $c->notes }}" data-active="{{ $c->is_active ? '1' : '0' }}">
                                             <i class="fas fa-pencil-alt"></i>
                                         </button>
                                         <button type="button" onclick="confirmDelete('{{ $c->id }}', '{{ $c->name }}')"
@@ -456,6 +456,18 @@
                                             <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Perubahan profile
                                                 akan langsung
                                                 diterapkan ke Router Mikrotik.</p>
+                                        </div>
+                                        <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                            <div>
+                                                <label class="block text-sm font-bold text-slate-900 dark:text-white">Status Aktif</label>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400">Jika diaktifkan, koneksi PPPoE akan diaktifkan di Mikrotik.</p>
+                                            </div>
+                                            <div>
+                                                <label class="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" name="is_active" id="editIsActive" value="1" class="sr-only peer">
+                                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary-600"></div>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                     <!-- Col 2 -->
@@ -791,6 +803,7 @@
                 $('#editNotes').val($(this).data('notes'));
                 $('#editLat').val(rawLat);
                 $('#editLng').val(rawLng);
+                $('#editIsActive').prop('checked', $(this).data('active') == 1);
                 $('#formEdit').attr('action', '/customers/' + id);
 
                 // Trigger Alpine Modal
