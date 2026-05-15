@@ -7,28 +7,28 @@
 @section('content')
 
     <div x-data="{ 
-                                                showCreateModal: false, 
-                                                showGenerateModal: false,
-                                                showPayModal: false,
-                                                showDeleteModal: false,
-                                                showDueDateModal: false,
-                                                showDeleteModal: false,
-                                                showDueDateModal: false,
-                                                selectedInvoices: [],
-                                                toggleAll() {
-                                                    if (this.selectedInvoices.length === {{ count($invoices->where('status', 'unpaid')) }}) {
-                                                        this.selectedInvoices = [];
-                                                    } else {
-                                                        this.selectedInvoices = [
-                                                            @foreach($invoices as $inv)
-                                                                @if($inv->status == 'unpaid')
-                                                                    {{ $inv->id }},
-                                                                @endif
-                                                            @endforeach
-                                                        ];
+                                                    showCreateModal: false, 
+                                                    showGenerateModal: false,
+                                                    showPayModal: false,
+                                                    showDeleteModal: false,
+                                                    showDueDateModal: false,
+                                                    showDeleteModal: false,
+                                                    showDueDateModal: false,
+                                                    selectedInvoices: [],
+                                                    toggleAll() {
+                                                        if (this.selectedInvoices.length === {{ count($invoices->where('status', 'unpaid')) }}) {
+                                                            this.selectedInvoices = [];
+                                                        } else {
+                                                            this.selectedInvoices = [
+                                                                @foreach($invoices as $inv)
+                                                                    @if($inv->status == 'unpaid')
+                                                                        {{ $inv->id }},
+                                                                    @endif
+                                                                @endforeach
+                                                            ];
+                                                        }
                                                     }
-                                                }
-                                            }">
+                                                }">
 
         <!-- Filter Bar -->
         <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -101,9 +101,9 @@
             </div>
             <div
                 class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 p-4 shadow-lg shadow-rose-500/20 text-white hover:shadow-xl transition-shadow group">
-                <dt class="truncate text-xs font-medium text-rose-100">Belum Dibayar</dt>
+                <dt class="truncate text-xs font-medium text-rose-100">Kurang Bayar</dt>
                 <dd class="mt-1 text-xl font-bold tracking-tight text-white">
-                    Rp {{ number_format($unpaid_bill ?? 0, 0, ',', '.') }}
+                    Rp {{ number_format($total_underpayment ?? 0, 0, ',', '.') }}
                 </dd>
                 <div
                     class="absolute right-3 top-3 text-white/10 group-hover:text-white/20 transition-all transform group-hover:scale-110">
@@ -111,14 +111,14 @@
                 </div>
             </div>
             <div
-                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 shadow-lg shadow-amber-500/20 text-white hover:shadow-xl transition-shadow group">
-                <dt class="truncate text-xs font-medium text-amber-100">Kurang Bayar</dt>
+                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 p-4 shadow-lg shadow-cyan-500/20 text-white hover:shadow-xl transition-shadow group">
+                <dt class="truncate text-xs font-medium text-cyan-100">Dibayar Dengan Saldo</dt>
                 <dd class="mt-1 text-xl font-bold tracking-tight text-white">
-                    Rp {{ number_format($total_underpayment ?? 0, 0, ',', '.') }}
+                    Rp {{ number_format($total_balance_used ?? 0, 0, ',', '.') }}
                 </dd>
                 <div
                     class="absolute right-3 top-3 text-white/10 group-hover:text-white/20 transition-all transform group-hover:scale-110">
-                    <i class="fas fa-money-bill-wave fa-2x"></i>
+                    <i class="fas fa-wallet fa-2x"></i>
                 </div>
             </div>
             <div
@@ -176,7 +176,8 @@
                         </button>
                     @endif
                 @else
-                    <span class="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-400 dark:text-slate-500">
+                    <span
+                        class="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-medium text-slate-400 dark:text-slate-500">
                         <i class="fas fa-lock mr-2"></i> Periode lalu — aksi dinonaktifkan
                     </span>
                 @endif
@@ -274,13 +275,14 @@
                                             <i class="fas fa-exclamation-triangle text-[8px]"></i>
                                             Tunggakan: Rp {{ number_format($carriedAmount, 0, ',', '.') }}
                                         </div>
-                                        <div class="mt-0.5 pt-0.5 border-t border-slate-200 dark:border-slate-600 font-bold text-sm">
+                                        <div
+                                            class="mt-0.5 pt-0.5 border-t border-slate-200 dark:border-slate-600 font-bold text-sm">
                                             Total: Rp {{ number_format($displayPrice, 0, ',', '.') }}
                                         </div>
                                     @else
                                         Rp {{ number_format($displayPrice, 0, ',', '.') }}
                                     @endif
-                                    
+
                                 </td>
                                 <td class="px-4 py-3 align-middle">
                                     @if($inv->status == 'paid')
@@ -292,8 +294,10 @@
                                                 </span>
                                             @endif
                                             @if(isset($paymentAdminByInvoice[$inv->id]))
-                                                <span class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium whitespace-nowrap">
-                                                    <i class="fas fa-user-shield text-[8px]"></i> input by {{ $paymentAdminByInvoice[$inv->id] }}
+                                                <span
+                                                    class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium whitespace-nowrap">
+                                                    <i class="fas fa-user-shield text-[8px]"></i> input by
+                                                    {{ $paymentAdminByInvoice[$inv->id] }}
                                                 </span>
                                             @endif
                                         </div>
@@ -312,8 +316,10 @@
                                                 </span>
                                             @endif
                                             @if(isset($paymentAdminByInvoice[$inv->id]))
-                                                <span class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium whitespace-nowrap">
-                                                    <i class="fas fa-user-shield text-[8px]"></i> input by {{ $paymentAdminByInvoice[$inv->id] }}
+                                                <span
+                                                    class="text-[10px] text-indigo-500 dark:text-indigo-400 font-medium whitespace-nowrap">
+                                                    <i class="fas fa-user-shield text-[8px]"></i> input by
+                                                    {{ $paymentAdminByInvoice[$inv->id] }}
                                                 </span>
                                             @endif
                                         </div>
@@ -341,7 +347,8 @@
                                                     <i class="fas fa-check-double"></i>
                                                 </button>
                                             @else
-                                                <span class="p-1.5 text-slate-300 dark:text-slate-600 cursor-not-allowed" title="Tidak bisa bayar di periode lalu">
+                                                <span class="p-1.5 text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                                                    title="Tidak bisa bayar di periode lalu">
                                                     <i class="fas fa-lock"></i>
                                                 </span>
                                             @endif
@@ -400,22 +407,32 @@
                                     </div>
 
                                     <!-- Customer Info Panel -->
-                                    <div id="manualCustomerInfo" class="rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 p-3 space-y-2 text-sm">
+                                    <div id="manualCustomerInfo"
+                                        class="rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 p-3 space-y-2 text-sm">
                                         <div class="flex justify-between">
                                             <span class="text-slate-500 dark:text-slate-400">Saldo:</span>
-                                            <span id="manualBalanceDisplay" class="font-bold text-emerald-600 dark:text-emerald-400">Rp 0</span>
+                                            <span id="manualBalanceDisplay"
+                                                class="font-bold text-emerald-600 dark:text-emerald-400">Rp 0</span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-slate-500 dark:text-slate-400">Harga Paket:</span>
-                                            <span id="manualPriceDisplay" class="font-semibold text-slate-700 dark:text-slate-200">Rp 0</span>
+                                            <span id="manualPriceDisplay"
+                                                class="font-semibold text-slate-700 dark:text-slate-200">Rp 0</span>
                                         </div>
                                         <div id="manualArrearsContainer" style="display:none;">
                                             <div class="border-t border-slate-200 dark:border-slate-600 pt-2 mt-1">
-                                                <span class="text-xs font-semibold text-orange-600 dark:text-orange-400"><i class="fas fa-exclamation-triangle mr-1"></i>Tunggakan Sebelumnya:</span>
+                                                <span class="text-xs font-semibold text-orange-600 dark:text-orange-400"><i
+                                                        class="fas fa-exclamation-triangle mr-1"></i>Tunggakan
+                                                    Sebelumnya:</span>
                                                 <div id="manualArrearsList" class="mt-1 space-y-0.5"></div>
-                                                <div class="flex justify-between mt-1 pt-1 border-t border-dashed border-orange-300 dark:border-orange-600">
-                                                    <span class="text-xs text-orange-600 dark:text-orange-400 font-semibold">Total Tunggakan:</span>
-                                                    <span id="manualArrearsTotal" class="text-xs font-bold text-orange-600 dark:text-orange-400">Rp 0</span>
+                                                <div
+                                                    class="flex justify-between mt-1 pt-1 border-t border-dashed border-orange-300 dark:border-orange-600">
+                                                    <span
+                                                        class="text-xs text-orange-600 dark:text-orange-400 font-semibold">Total
+                                                        Tunggakan:</span>
+                                                    <span id="manualArrearsTotal"
+                                                        class="text-xs font-bold text-orange-600 dark:text-orange-400">Rp
+                                                        0</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -863,97 +880,81 @@
                 // Customer data map for manual invoice modal
                 const customerDataMap = {
                     @foreach($customers as $c)
-                    {{ $c->id }}: {
-                        balance: {{ (float) $c->balance }},
-                        price: {{ (float) $c->monthly_price }},
-                        arrears: [
-                            @php
-                                $custArrList = \App\Models\Invoice::where('customer_id', $c->id)
-                                    ->where('status', 'unpaid')
-                                    ->orderBy('due_date', 'asc')
-                                    ->get();
-                            @endphp
-                            @foreach($custArrList as $arr)
-                                @php
-                                    $arrPrice = $arr->price > 0 ? $arr->price : ($c->monthly_price ?? 0);
-                                    $arrOutstanding = $arrPrice - (float) $arr->amount_paid;
-                                @endphp
-                                @if($arrOutstanding > 0)
-                            { period: '{{ \Carbon\Carbon::parse($arr->due_date)->isoFormat("MMM Y") }}', amount: {{ $arrOutstanding }} },
-                                @endif
-                            @endforeach
-                        ]
-                    },
+                            {{ $c->id }}: {
+                            balance: {{ (float) $c->balance }},
+                            price: {{ (float) $c->monthly_price }},
+                            arrears: {!! json_encode($allArrearsMap[$c->id] ?? []) !!}
+                        },
                     @endforeach
-                };
+                    };
 
-                function updateManualCustomerInfo(customerId) {
-                    const data = customerDataMap[customerId];
-                    if (!data) return;
+            function updateManualCustomerInfo(customerId) {
+                const data = customerDataMap[customerId];
+                if (!data) return;
 
-                    const fmtRp = (v) => 'Rp ' + Number(v).toLocaleString('id-ID');
+                const fmtRp = (v) => 'Rp ' + Number(v).toLocaleString('id-ID');
 
-                    $('#manualBalanceDisplay').text(fmtRp(data.balance));
-                    $('#manualPriceDisplay').text(fmtRp(data.price));
+                $('#manualBalanceDisplay').text(fmtRp(data.balance));
+                $('#manualPriceDisplay').text(fmtRp(data.price));
 
-                    // Update balance color
-                    if (data.balance > 0) {
-                        $('#manualBalanceDisplay').removeClass('text-red-500 dark:text-red-400').addClass('text-emerald-600 dark:text-emerald-400');
-                    } else {
-                        $('#manualBalanceDisplay').removeClass('text-emerald-600 dark:text-emerald-400').addClass('text-red-500 dark:text-red-400');
-                    }
-
-                    // Arrears
-                    const arrearsContainer = $('#manualArrearsContainer');
-                    const arrearsList = $('#manualArrearsList');
-                    arrearsList.empty();
-
-                    if (data.arrears.length > 0) {
-                        let totalArrears = 0;
-                        data.arrears.forEach(function(arr) {
-                            totalArrears += arr.amount;
-                            arrearsList.append(`
-                                <div class="flex justify-between text-[11px]">
-                                    <span class="text-orange-500 dark:text-orange-400"><i class="fas fa-exclamation-circle text-[8px] mr-1"></i>${arr.period}</span>
-                                    <span class="font-medium text-orange-600 dark:text-orange-400">${fmtRp(arr.amount)}</span>
-                                </div>
-                            `);
-                        });
-                        $('#manualArrearsTotal').text(fmtRp(totalArrears));
-                        arrearsContainer.show();
-                    } else {
-                        arrearsContainer.hide();
-                    }
+                // Update balance color
+                if (data.balance > 0) {
+                    $('#manualBalanceDisplay').removeClass('text-red-500 dark:text-red-400').addClass('text-emerald-600 dark:text-emerald-400');
+                } else {
+                    $('#manualBalanceDisplay').removeClass('text-emerald-600 dark:text-emerald-400').addClass('text-red-500 dark:text-red-400');
                 }
 
-                // Listen to Select2 change + native change
-                $('#manualCustomerId').on('change', function() {
-                    updateManualCustomerInfo($(this).val());
-                });
+                // Arrears
+                const arrearsContainer = $('#manualArrearsContainer');
+                const arrearsList = $('#manualArrearsList');
+                arrearsList.empty();
 
-                // Trigger on first load
-                const firstCustomerId = $('#manualCustomerId').val();
-                if (firstCustomerId) {
-                    updateManualCustomerInfo(firstCustomerId);
+                if (data.arrears.length > 0) {
+                    let totalArrears = 0;
+                    data.arrears.forEach(function (arr) {
+                        totalArrears += arr.amount;
+                        arrearsList.append(`
+                                    <div class="flex justify-between text-[11px]">
+                                        <span class="text-orange-500 dark:text-orange-400"><i class="fas fa-exclamation-circle text-[8px] mr-1"></i>${arr.period}</span>
+                                        <span class="font-medium text-orange-600 dark:text-orange-400">${fmtRp(arr.amount)}</span>
+                                    </div>
+                                `);
+                    });
+                    $('#manualArrearsTotal').text(fmtRp(totalArrears));
+                    arrearsContainer.show();
+                } else {
+                    arrearsContainer.hide();
                 }
+            }
 
-                // Sync Manual Due Date when Month/Year changes
-                $('#manualMonth, #manualYear').on('change', function () {
-                    const month = $('#manualMonth').val();
-                    const year = $('#manualYear').val();
-                    // Get current day from manualDueDate or default to today's day
-                    const currentVal = $('#manualDueDate').val();
-                    let day = new Date().getDate();
-                    if (currentVal) {
-                        day = new Date(currentVal).getDate();
-                    }
-
-                    // Format YYYY-MM-DD
-                    const formattedMonth = month.toString().padStart(2, '0');
-                    const formattedDay = day.toString().padStart(2, '0');
-                    $('#manualDueDate').val(`${year}-${formattedMonth}-${formattedDay}`);
-                });
+            // Listen to Select2 change + native change
+            $('#manualCustomerId').on('change', function () {
+                updateManualCustomerInfo($(this).val());
             });
+
+            // Trigger on first load
+            const firstCustomerId = $('#manualCustomerId').val();
+            if (firstCustomerId) {
+                updateManualCustomerInfo(firstCustomerId);
+            }
+
+            // Sync Manual Due Date when Month/Year changes
+            $('#manualMonth, #manualYear').on('change', function () {
+                const month = $('#manualMonth').val();
+                const year = $('#manualYear').val();
+                // Get current day from manualDueDate or default to today's day
+                const currentVal = $('#manualDueDate').val();
+                let day = new Date().getDate();
+                if (currentVal) {
+                    day = new Date(currentVal).getDate();
+                }
+
+                // Format YYYY-MM-DD
+                const formattedMonth = month.toString().padStart(2, '0');
+                const formattedDay = day.toString().padStart(2, '0');
+                $('#manualDueDate').val(`${year}-${formattedMonth}-${formattedDay}`);
+            });
+                });
 
             async function startGenerate() {
                 const adminId = $('#genAdminId').val();
@@ -969,7 +970,7 @@
                     }
                 @endif
 
-                                        if (!dueDate) {
+                                            if (!dueDate) {
                     alert('Pilih tanggal jatuh tempo!');
                     return;
                 }
@@ -1144,113 +1145,113 @@
                         let arrearsHtml = '';
                         if (data.arrears && data.arrears.length > 0) {
                             arrearsHtml = `
-                                    <div class="text-left mt-4 mb-4">
-                                        <label class="block text-sm font-bold text-gray-800 mb-2">
-                                            <i class="fas fa-exclamation-triangle text-orange-500 mr-1"></i> Kurang Bayar Sebelumnya
-                                        </label>
-                                        <div class="space-y-2 max-h-48 overflow-y-auto" id="swal_arrears_container">
-                                `;
+                                        <div class="text-left mt-4 mb-4">
+                                            <label class="block text-sm font-bold text-gray-800 mb-2">
+                                                <i class="fas fa-exclamation-triangle text-orange-500 mr-1"></i> Kurang Bayar Sebelumnya
+                                            </label>
+                                            <div class="space-y-2 max-h-48 overflow-y-auto" id="swal_arrears_container">
+                                    `;
                             data.arrears.forEach((arr, idx) => {
                                 arrearsHtml += `
-                                        <div class="border border-orange-200 rounded-lg p-3 bg-orange-50">
-                                            <label class="flex items-start gap-2 cursor-pointer">
-                                                <input type="checkbox" class="arrear-checkbox mt-0.5 w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
-                                                    data-arrear-id="${arr.id}"
-                                                    data-arrear-amount="${arr.underpayment}"
-                                                    data-arrear-idx="${idx}"
-                                                    onchange="toggleArrearInput(this)">
-                                                <div class="flex-1">
-                                                    <div class="flex justify-between items-center">
-                                                        <span class="text-sm font-medium text-gray-700">${arr.period}</span>
-                                                        <span class="text-sm font-bold text-orange-600">${arr.underpayment_formatted}</span>
+                                            <div class="border border-orange-200 rounded-lg p-3 bg-orange-50">
+                                                <label class="flex items-start gap-2 cursor-pointer">
+                                                    <input type="checkbox" class="arrear-checkbox mt-0.5 w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                                                        data-arrear-id="${arr.id}"
+                                                        data-arrear-amount="${arr.underpayment}"
+                                                        data-arrear-idx="${idx}"
+                                                        onchange="toggleArrearInput(this)">
+                                                    <div class="flex-1">
+                                                        <div class="flex justify-between items-center">
+                                                            <span class="text-sm font-medium text-gray-700">${arr.period}</span>
+                                                            <span class="text-sm font-bold text-orange-600">${arr.underpayment_formatted}</span>
+                                                        </div>
+                                                        <div class="text-xs text-gray-500">Sudah dibayar: Rp ${Number(arr.amount_paid).toLocaleString('id-ID')}</div>
+                                                        <div class="mt-2 hidden" id="arrear_input_wrapper_${idx}">
+                                                            <label class="block text-xs font-medium text-gray-600 mb-1">Jumlah yang dibayar (Rp)</label>
+                                                            <input type="number" id="arrear_amount_${idx}" class="w-full px-3 py-1.5 text-sm border border-orange-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                                                                value="${arr.underpayment}" min="1" max="${arr.underpayment}"
+                                                                onchange="updateArrearTotal()" oninput="updateArrearTotal()">
+                                                        </div>
                                                     </div>
-                                                    <div class="text-xs text-gray-500">Sudah dibayar: Rp ${Number(arr.amount_paid).toLocaleString('id-ID')}</div>
-                                                    <div class="mt-2 hidden" id="arrear_input_wrapper_${idx}">
-                                                        <label class="block text-xs font-medium text-gray-600 mb-1">Jumlah yang dibayar (Rp)</label>
-                                                        <input type="number" id="arrear_amount_${idx}" class="w-full px-3 py-1.5 text-sm border border-orange-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                                                            value="${arr.underpayment}" min="1" max="${arr.underpayment}"
-                                                            onchange="updateArrearTotal()" oninput="updateArrearTotal()">
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    `;
+                                                </label>
+                                            </div>
+                                        `;
                             });
                             arrearsHtml += `
+                                            </div>
+                                            <div class="mt-2 text-right text-xs font-semibold text-orange-700" id="swal_arrear_total_text" style="display:none;">Total Tunggakan: <span id="swal_arrear_total_value">Rp 0</span></div>
                                         </div>
-                                        <div class="mt-2 text-right text-xs font-semibold text-orange-700" id="swal_arrear_total_text" style="display:none;">Total Tunggakan: <span id="swal_arrear_total_value">Rp 0</span></div>
-                                    </div>
-                                `;
+                                    `;
                         }
 
                         // Build carried underpayment breakdown HTML
                         let carriedHtml = '';
                         if (data.carried_underpayment > 0) {
                             carriedHtml = `
-                                <div class="text-left mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200 text-sm">
-                                    <div class="font-bold text-orange-700 mb-2">
-                                        <i class="fas fa-exclamation-triangle mr-1"></i> Akumulasi Tunggakan
-                                    </div>
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-gray-600">Tagihan Bulan Ini:</span>
-                                        <span class="font-semibold">${data.base_price_formatted}</span>
-                                    </div>`;
+                                    <div class="text-left mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200 text-sm">
+                                        <div class="font-bold text-orange-700 mb-2">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i> Akumulasi Tunggakan
+                                        </div>
+                                        <div class="flex justify-between mb-1">
+                                            <span class="text-gray-600">Tagihan Bulan Ini:</span>
+                                            <span class="font-semibold">${data.base_price_formatted}</span>
+                                        </div>`;
                             if (data.carried_details && data.carried_details.length > 0) {
-                                data.carried_details.forEach(function(cd) {
+                                data.carried_details.forEach(function (cd) {
                                     carriedHtml += `
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-orange-600"><i class="fas fa-exclamation-circle text-[10px] mr-1"></i>${cd.period}:</span>
-                                        <span class="font-medium text-orange-700">${cd.amount_formatted}</span>
-                                    </div>`;
+                                        <div class="flex justify-between mb-1">
+                                            <span class="text-orange-600"><i class="fas fa-exclamation-circle text-[10px] mr-1"></i>${cd.period}:</span>
+                                            <span class="font-medium text-orange-700">${cd.amount_formatted}</span>
+                                        </div>`;
                                 });
                             } else {
                                 carriedHtml += `
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-orange-600"><i class="fas fa-exclamation-circle text-[10px] mr-1"></i>Tunggakan Sebelumnya:</span>
-                                        <span class="font-medium text-orange-700">${data.carried_underpayment_formatted}</span>
-                                    </div>`;
+                                        <div class="flex justify-between mb-1">
+                                            <span class="text-orange-600"><i class="fas fa-exclamation-circle text-[10px] mr-1"></i>Tunggakan Sebelumnya:</span>
+                                            <span class="font-medium text-orange-700">${data.carried_underpayment_formatted}</span>
+                                        </div>`;
                             }
                             carriedHtml += `
-                                    <div class="flex justify-between pt-1 mt-1 border-t border-orange-300">
-                                        <span class="font-bold text-gray-800">Total Tagihan:</span>
-                                        <span class="font-bold text-red-600">${data.price_formatted}</span>
-                                    </div>
-                                </div>`;
+                                        <div class="flex justify-between pt-1 mt-1 border-t border-orange-300">
+                                            <span class="font-bold text-gray-800">Total Tagihan:</span>
+                                            <span class="font-bold text-red-600">${data.price_formatted}</span>
+                                        </div>
+                                    </div>`;
                         }
 
                         let htmlContent = `
-                                <div class="text-left mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
-                                    <div class="flex justify-between mb-1"><span class="text-gray-500">Pelanggan:</span> <span class="font-semibold">${data.customer_name}</span></div>
-                                    <div class="flex justify-between mb-1"><span class="text-gray-500">Total Tagihan:</span> <span class="font-bold text-red-600">${data.price_formatted}</span></div>
-                                    ${data.amount_paid > 0 ? `<div class="flex justify-between mb-1"><span class="text-gray-500">Sudah Dibayar (Saldo):</span> <span class="font-medium text-green-600">${data.amount_paid_formatted}</span></div>` : ''}
-                                    <div class="flex justify-between mb-1"><span class="text-gray-500">Sisa Tagihan:</span> <span class="font-bold ${data.remaining_to_pay > 0 ? 'text-orange-600' : 'text-green-600'}">${data.remaining_to_pay_formatted}</span></div>
-                                    <div class="flex justify-between"><span class="text-gray-500">Saldo:</span> <span class="${data.balance_sufficient ? 'text-green-600 font-bold' : 'text-gray-600'}">${data.balance_formatted}</span></div>
-                                </div>
-
-                                ${carriedHtml}
-
-                                <div class="mb-4 text-left">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Metode Pembayaran</label>
-                                    <div class="flex flex-col gap-2">
-                                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                            <input type="radio" name="swal_pay_method" value="manual" class="w-4 h-4 text-blue-600 focus:ring-blue-500" checked onchange="toggleSwalPayMethod()">
-                                            <span class="ml-2 font-medium text-gray-700">Bayar Manual</span>
-                                        </label>
-                                        <label class="flex items-center p-3 border rounded-lg ${!data.balance_sufficient ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'}">
-                                            <input type="radio" name="swal_pay_method" value="balance" class="w-4 h-4 text-blue-600 focus:ring-blue-500" ${!data.balance_sufficient ? 'disabled' : ''} onchange="toggleSwalPayMethod()">
-                                            <span class="ml-2 font-medium text-gray-700">Pakai Saldo</span>
-                                        </label>
+                                    <div class="text-left mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+                                        <div class="flex justify-between mb-1"><span class="text-gray-500">Pelanggan:</span> <span class="font-semibold">${data.customer_name}</span></div>
+                                        <div class="flex justify-between mb-1"><span class="text-gray-500">Total Tagihan:</span> <span class="font-bold text-red-600">${data.price_formatted}</span></div>
+                                        ${data.amount_paid > 0 ? `<div class="flex justify-between mb-1"><span class="text-gray-500">Sudah Dibayar (Saldo):</span> <span class="font-medium text-green-600">${data.amount_paid_formatted}</span></div>` : ''}
+                                        <div class="flex justify-between mb-1"><span class="text-gray-500">Sisa Tagihan:</span> <span class="font-bold ${data.remaining_to_pay > 0 ? 'text-orange-600' : 'text-green-600'}">${data.remaining_to_pay_formatted}</span></div>
+                                        <div class="flex justify-between"><span class="text-gray-500">Saldo:</span> <span class="${data.balance_sufficient ? 'text-green-600 font-bold' : 'text-gray-600'}">${data.balance_formatted}</span></div>
                                     </div>
-                                </div>
 
-                                <div id="swal_amount_container" class="text-left">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Pembayaran (Rp)</label>
-                                    <input type="number" id="swal_amount" class="swal2-input !m-0 w-full" value="${data.remaining_to_pay}" style="height: 40px; font-size: 1rem;">
-                                    <p class="text-xs text-orange-600 mt-1 hidden" id="swal_underpayment_warning">Jika bayar kurang, sisa akan diakumulasi ke bulan depan.</p>
-                                </div>
+                                    ${carriedHtml}
 
-                                ${arrearsHtml}
-                            `;
+                                    <div class="mb-4 text-left">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Metode Pembayaran</label>
+                                        <div class="flex flex-col gap-2">
+                                            <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                                <input type="radio" name="swal_pay_method" value="manual" class="w-4 h-4 text-blue-600 focus:ring-blue-500" checked onchange="toggleSwalPayMethod()">
+                                                <span class="ml-2 font-medium text-gray-700">Bayar Manual</span>
+                                            </label>
+                                            <label class="flex items-center p-3 border rounded-lg ${!data.balance_sufficient ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'}">
+                                                <input type="radio" name="swal_pay_method" value="balance" class="w-4 h-4 text-blue-600 focus:ring-blue-500" ${!data.balance_sufficient ? 'disabled' : ''} onchange="toggleSwalPayMethod()">
+                                                <span class="ml-2 font-medium text-gray-700">Pakai Saldo</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div id="swal_amount_container" class="text-left">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Pembayaran (Rp)</label>
+                                        <input type="number" id="swal_amount" class="swal2-input !m-0 w-full" value="${data.remaining_to_pay}" style="height: 40px; font-size: 1rem;">
+                                        <p class="text-xs text-orange-600 mt-1 hidden" id="swal_underpayment_warning">Jika bayar kurang, sisa akan diakumulasi ke bulan depan.</p>
+                                    </div>
+
+                                    ${arrearsHtml}
+                                `;
 
                         Swal.fire({
                             title: 'Proses Pembayaran',
@@ -1460,7 +1461,7 @@
                 Swal.fire({
                     title: 'Batalkan Generate?',
                     html: `<p class="text-sm text-gray-600">Semua tagihan periode <strong>${monthNames[month]} ${year}</strong> akan dihapus.</p>
-                               <p class="text-sm text-orange-600 mt-2"><i class="fas fa-info-circle mr-1"></i>Saldo pelanggan yang terpotong otomatis saat generate akan dikembalikan.</p>`,
+                                   <p class="text-sm text-orange-600 mt-2"><i class="fas fa-info-circle mr-1"></i>Saldo pelanggan yang terpotong otomatis saat generate akan dikembalikan.</p>`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d97706',
@@ -1486,7 +1487,7 @@
                                 @if(auth()->user()->role == 'superadmin')
                                     admin_id: '{{ $selectedAdminId }}'
                                 @endif
-                                }),
+                                    }),
                             contentType: 'application/json',
                                 success: function(res) {
                                     if (res.status === 'success') {
@@ -1510,188 +1511,188 @@
                         }
                     });
             }
-                    });
-                }
-
-                // ========== DETAIL PEMBAYARAN ==========
-                function openPaymentDetail(invoiceId) {
-                    Swal.fire({ title: 'Memuat...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-                    $.get(`/billing/${invoiceId}/payments`, function(data) {
-                        let carriedHtml = '';
-                        if (data.carried_underpayment > 0) {
-                            carriedHtml = `
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span class="text-gray-500">Tagihan Bulan Ini:</span>
-                                    <span class="font-medium">${data.base_price_formatted}</span>
-                                </div>
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span class="text-orange-600"><i class="fas fa-exclamation-triangle text-[10px] mr-1"></i>Tunggakan:</span>
-                                    <span class="font-medium text-orange-700">${data.carried_formatted}</span>
-                                </div>
-                                <div class="flex justify-between text-xs pt-1 border-t border-gray-200">
-                                    <span class="font-bold text-gray-800">Total:</span>
-                                    <span class="font-bold text-red-600">${data.price_formatted}</span>
-                                </div>`;
-                        } else {
-                            carriedHtml = `
-                                <div class="flex justify-between text-xs">
-                                    <span class="text-gray-500">Total Tagihan:</span>
-                                    <span class="font-bold text-red-600">${data.price_formatted}</span>
-                                </div>`;
-                        }
-
-                        let statusBadge = data.status === 'paid'
-                            ? '<span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"><i class="fas fa-check mr-1"></i>Lunas</span>'
-                            : '<span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"><i class="fas fa-clock mr-1"></i>Belum Lunas</span>';
-
-                        let tableRows = '';
-                        if (data.payments.length === 0) {
-                            tableRows = `<tr><td colspan="6" class="text-center text-gray-400 py-4 text-sm">Belum ada pembayaran</td></tr>`;
-                        } else {
-                            data.payments.forEach(function(p) {
-                                let amountDisplay = '';
-                                if (p.amount > 0 && p.balance_used > 0) {
-                                    amountDisplay = `${p.amount_formatted} <span class="text-[10px] text-cyan-600">+${p.balance_used_formatted} saldo</span>`;
-                                } else if (p.balance_used > 0) {
-                                    amountDisplay = `${p.balance_used_formatted} <span class="text-[10px] text-cyan-600">(saldo)</span>`;
-                                } else {
-                                    amountDisplay = p.amount_formatted;
-                                }
-
-                                let excessBadge = p.excess_to_balance > 0
-                                    ? `<div class="text-[10px] text-cyan-600">+${p.excess_formatted} → saldo</div>`
-                                    : '';
-
-                                let methodBadge = '';
-                                switch(p.method) {
-                                    case 'manual': methodBadge = '<span class="inline-flex items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">Manual</span>'; break;
-                                    case 'balance': methodBadge = '<span class="inline-flex items-center rounded-full bg-cyan-100 px-1.5 py-0.5 text-[10px] font-medium text-cyan-700">Saldo</span>'; break;
-                                    case 'auto_balance': methodBadge = '<span class="inline-flex items-center rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">Auto</span>'; break;
-                                    default: methodBadge = `<span class="text-[10px]">${p.method_label}</span>`;
-                                }
-
-                                tableRows += `
-                                    <tr class="border-b border-gray-100 hover:bg-gray-50" id="payment-row-${p.id}">
-                                        <td class="py-2 px-2 text-[11px] text-gray-500 whitespace-nowrap">${p.date}</td>
-                                        <td class="py-2 px-2 text-[11px] font-medium">${amountDisplay}${excessBadge}</td>
-                                        <td class="py-2 px-2 text-center">${methodBadge}</td>
-                                        <td class="py-2 px-2 text-[11px] font-semibold ${p.remaining > 0 ? 'text-orange-600' : 'text-green-600'}">${p.remaining_formatted}</td>
-                                        <td class="py-2 px-2 text-[10px] text-gray-400">${p.admin_name}</td>
-                                        <td class="py-2 px-2 text-center">
-                                            <button type="button" onclick="cancelSinglePayment(${p.id}, ${invoiceId})"
-                                                class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition-colors text-[11px]"
-                                                title="Batalkan pembayaran ini">
-                                                <i class="fas fa-times-circle"></i>
-                                            </button>
-                                        </td>
-                                    </tr>`;
-                            });
-                        }
-
-                        let summaryHtml = '';
-                        if (data.total_paid > 0) {
-                            let outstanding = Math.max(0, data.price - data.total_paid);
-                            summaryHtml = `
-                                <div class="mt-3 p-2 bg-gray-50 rounded-lg border text-xs">
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-gray-500">Total Dibayar:</span>
-                                        <span class="font-bold text-green-600">${data.total_paid_formatted}</span>
-                                    </div>
-                                    ${outstanding > 0 ? `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Sisa Kurang Bayar:</span>
-                                        <span class="font-bold text-orange-600">Rp ${outstanding.toLocaleString('id-ID')}</span>
-                                    </div>` : `
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Status:</span>
-                                        <span class="font-bold text-green-600">✅ Lunas</span>
-                                    </div>`}
-                                </div>`;
-                        }
-
-                        let htmlContent = `
-                            <div class="text-left">
-                                <div class="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="font-semibold text-gray-700">${data.customer_name}</span>
-                                        ${statusBadge}
-                                    </div>
-                                    ${carriedHtml}
-                                </div>
-
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-left" id="paymentDetailTable">
-                                        <thead>
-                                            <tr class="border-b-2 border-gray-200">
-                                                <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase">Tanggal</th>
-                                                <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase">Nominal</th>
-                                                <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase text-center">Metode</th>
-                                                <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase">Sisa</th>
-                                                <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase">Oleh</th>
-                                                <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase text-center">Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>${tableRows}</tbody>
-                                    </table>
-                                </div>
-
-                                ${summaryHtml}
-                            </div>`;
-
-                        Swal.fire({
-                            title: '<i class="fas fa-receipt mr-2"></i> Detail Pembayaran',
-                            html: htmlContent,
-                            width: 700,
-                            showCloseButton: true,
-                            showConfirmButton: false,
-                            customClass: { popup: 'text-left' }
                         });
-                    }).fail(function(err) {
-                        Swal.fire('Gagal', 'Tidak dapat memuat detail pembayaran.', 'error');
-                    });
-                }
+                    }
 
-                function cancelSinglePayment(paymentId, invoiceId) {
+            // ========== DETAIL PEMBAYARAN ==========
+            function openPaymentDetail(invoiceId) {
+                Swal.fire({ title: 'Memuat...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                $.get(`/billing/${invoiceId}/payments`, function (data) {
+                    let carriedHtml = '';
+                    if (data.carried_underpayment > 0) {
+                        carriedHtml = `
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-gray-500">Tagihan Bulan Ini:</span>
+                                        <span class="font-medium">${data.base_price_formatted}</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="text-orange-600"><i class="fas fa-exclamation-triangle text-[10px] mr-1"></i>Tunggakan:</span>
+                                        <span class="font-medium text-orange-700">${data.carried_formatted}</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs pt-1 border-t border-gray-200">
+                                        <span class="font-bold text-gray-800">Total:</span>
+                                        <span class="font-bold text-red-600">${data.price_formatted}</span>
+                                    </div>`;
+                    } else {
+                        carriedHtml = `
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-gray-500">Total Tagihan:</span>
+                                        <span class="font-bold text-red-600">${data.price_formatted}</span>
+                                    </div>`;
+                    }
+
+                    let statusBadge = data.status === 'paid'
+                        ? '<span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700"><i class="fas fa-check mr-1"></i>Lunas</span>'
+                        : '<span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"><i class="fas fa-clock mr-1"></i>Belum Lunas</span>';
+
+                    let tableRows = '';
+                    if (data.payments.length === 0) {
+                        tableRows = `<tr><td colspan="6" class="text-center text-gray-400 py-4 text-sm">Belum ada pembayaran</td></tr>`;
+                    } else {
+                        data.payments.forEach(function (p) {
+                            let amountDisplay = '';
+                            if (p.amount > 0 && p.balance_used > 0) {
+                                amountDisplay = `${p.amount_formatted} <span class="text-[10px] text-cyan-600">+${p.balance_used_formatted} saldo</span>`;
+                            } else if (p.balance_used > 0) {
+                                amountDisplay = `${p.balance_used_formatted} <span class="text-[10px] text-cyan-600">(saldo)</span>`;
+                            } else {
+                                amountDisplay = p.amount_formatted;
+                            }
+
+                            let excessBadge = p.excess_to_balance > 0
+                                ? `<div class="text-[10px] text-cyan-600">+${p.excess_formatted} → saldo</div>`
+                                : '';
+
+                            let methodBadge = '';
+                            switch (p.method) {
+                                case 'manual': methodBadge = '<span class="inline-flex items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">Manual</span>'; break;
+                                case 'balance': methodBadge = '<span class="inline-flex items-center rounded-full bg-cyan-100 px-1.5 py-0.5 text-[10px] font-medium text-cyan-700">Saldo</span>'; break;
+                                case 'auto_balance': methodBadge = '<span class="inline-flex items-center rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">Auto</span>'; break;
+                                default: methodBadge = `<span class="text-[10px]">${p.method_label}</span>`;
+                            }
+
+                            tableRows += `
+                                        <tr class="border-b border-gray-100 hover:bg-gray-50" id="payment-row-${p.id}">
+                                            <td class="py-2 px-2 text-[11px] text-gray-500 whitespace-nowrap">${p.date}</td>
+                                            <td class="py-2 px-2 text-[11px] font-medium">${amountDisplay}${excessBadge}</td>
+                                            <td class="py-2 px-2 text-center">${methodBadge}</td>
+                                            <td class="py-2 px-2 text-[11px] font-semibold ${p.remaining > 0 ? 'text-orange-600' : 'text-green-600'}">${p.remaining_formatted}</td>
+                                            <td class="py-2 px-2 text-[10px] text-gray-400">${p.admin_name}</td>
+                                            <td class="py-2 px-2 text-center">
+                                                <button type="button" onclick="cancelSinglePayment(${p.id}, ${invoiceId})"
+                                                    class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition-colors text-[11px]"
+                                                    title="Batalkan pembayaran ini">
+                                                    <i class="fas fa-times-circle"></i>
+                                                </button>
+                                            </td>
+                                        </tr>`;
+                        });
+                    }
+
+                    let summaryHtml = '';
+                    if (data.total_paid > 0) {
+                        let outstanding = Math.max(0, data.price - data.total_paid);
+                        summaryHtml = `
+                                    <div class="mt-3 p-2 bg-gray-50 rounded-lg border text-xs">
+                                        <div class="flex justify-between mb-1">
+                                            <span class="text-gray-500">Total Dibayar:</span>
+                                            <span class="font-bold text-green-600">${data.total_paid_formatted}</span>
+                                        </div>
+                                        ${outstanding > 0 ? `
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">Sisa Kurang Bayar:</span>
+                                            <span class="font-bold text-orange-600">Rp ${outstanding.toLocaleString('id-ID')}</span>
+                                        </div>` : `
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-500">Status:</span>
+                                            <span class="font-bold text-green-600">✅ Lunas</span>
+                                        </div>`}
+                                    </div>`;
+                    }
+
+                    let htmlContent = `
+                                <div class="text-left">
+                                    <div class="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="font-semibold text-gray-700">${data.customer_name}</span>
+                                            ${statusBadge}
+                                        </div>
+                                        ${carriedHtml}
+                                    </div>
+
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-left" id="paymentDetailTable">
+                                            <thead>
+                                                <tr class="border-b-2 border-gray-200">
+                                                    <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase">Tanggal</th>
+                                                    <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase">Nominal</th>
+                                                    <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase text-center">Metode</th>
+                                                    <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase">Sisa</th>
+                                                    <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase">Oleh</th>
+                                                    <th class="py-2 px-2 text-[10px] font-semibold text-gray-500 uppercase text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>${tableRows}</tbody>
+                                        </table>
+                                    </div>
+
+                                    ${summaryHtml}
+                                </div>`;
+
                     Swal.fire({
-                        title: 'Batalkan Pembayaran?',
-                        text: 'Pembayaran ini akan dibatalkan dan saldo dikembalikan jika ada.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#ef4444',
-                        confirmButtonText: '<i class="fas fa-times mr-1"></i> Ya, Batalkan',
-                        cancelButtonText: 'Tidak',
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            Swal.fire({ title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-                            $.ajax({
-                                url: `/billing/payment/${paymentId}/cancel`,
-                                method: 'POST',
-                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                                contentType: 'application/json',
-                                success: function(res) {
-                                    if (res.status === 'success') {
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Berhasil!',
-                                            text: res.message,
-                                        }).then(() => {
-                                            location.reload();
-                                        });
-                                    } else {
-                                        Swal.fire('Gagal', res.message, 'error');
-                                    }
-                                },
-                                error: function(err) {
-                                    let msg = 'Terjadi kesalahan';
-                                    if (err.responseJSON && err.responseJSON.message) msg = err.responseJSON.message;
-                                    Swal.fire('Gagal', msg, 'error');
-                                }
-                            });
-                        }
+                        title: '<i class="fas fa-receipt mr-2"></i> Detail Pembayaran',
+                        html: htmlContent,
+                        width: 700,
+                        showCloseButton: true,
+                        showConfirmButton: false,
+                        customClass: { popup: 'text-left' }
                     });
-                }
+                }).fail(function (err) {
+                    Swal.fire('Gagal', 'Tidak dapat memuat detail pembayaran.', 'error');
+                });
+            }
+
+            function cancelSinglePayment(paymentId, invoiceId) {
+                Swal.fire({
+                    title: 'Batalkan Pembayaran?',
+                    text: 'Pembayaran ini akan dibatalkan dan saldo dikembalikan jika ada.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: '<i class="fas fa-times mr-1"></i> Ya, Batalkan',
+                    cancelButtonText: 'Tidak',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: 'Memproses...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                        $.ajax({
+                            url: `/billing/payment/${paymentId}/cancel`,
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                            contentType: 'application/json',
+                            success: function (res) {
+                                if (res.status === 'success') {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Berhasil!',
+                                        text: res.message,
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Gagal', res.message, 'error');
+                                }
+                            },
+                            error: function (err) {
+                                let msg = 'Terjadi kesalahan';
+                                if (err.responseJSON && err.responseJSON.message) msg = err.responseJSON.message;
+                                Swal.fire('Gagal', msg, 'error');
+                            }
+                        });
+                    }
+                });
+            }
 
         </script>
     @endpush

@@ -117,6 +117,26 @@ class BillingController extends Controller
             }
         }
 
+        // Build all unpaid invoices map for the manual invoice modal (to avoid N+1 in view)
+        $allUnpaidInvoices = Invoice::whereIn('customer_id', $customers->pluck('id'))
+            ->where('status', 'unpaid')
+            ->orderBy('due_date', 'asc')
+            ->get();
+            
+        $customerPriceMap = $customers->pluck('monthly_price', 'id')->toArray();
+        $allArrearsMap = [];
+        foreach ($allUnpaidInvoices as $arr) {
+            $monthlyPrice = $customerPriceMap[$arr->customer_id] ?? 0;
+            $arrPrice = $arr->price > 0 ? $arr->price : $monthlyPrice;
+            $arrOutstanding = $arrPrice - (float) $arr->amount_paid;
+            if ($arrOutstanding > 0) {
+                $allArrearsMap[$arr->customer_id][] = [
+                    'period' => Carbon::parse($arr->due_date)->isoFormat('MMM Y'),
+                    'amount' => $arrOutstanding,
+                ];
+            }
+        }
+
         // Build arrears map: ALL unpaid invoices per customer (from any month, excluding current period)
         $customerIds = $invoices->pluck('customer_id')->unique()->toArray();
         $arrearsQuery = Invoice::with('customer')
@@ -141,6 +161,10 @@ class BillingController extends Controller
         // Calculate period totals from billing_payments
         $total_excess_to_balance = BillingPayment::whereIn('invoice_id', $invoiceIdsAll)
             ->sum('excess_to_balance');
+            
+        $total_balance_used = BillingPayment::whereIn('invoice_id', $invoiceIdsAll)
+            ->sum('balance_used');
+
         // Total outstanding for unpaid invoices in current period
         $total_underpayment = 0;
         foreach ($invoices->where('status', 'unpaid') as $unpaidInv) {
@@ -183,10 +207,16 @@ class BillingController extends Controller
         if ($latestInvoice) {
             $latestMonth = (int) Carbon::parse($latestInvoice->due_date)->format('m');
             $latestYear = (int) Carbon::parse($latestInvoice->due_date)->format('Y');
-            $isLatestPeriod = ((int) $month === $latestMonth && (int) $year === $latestYear);
+            
+            // Allow actions if selected period is >= latest generated period
+            if ($year > $latestYear || ((int) $year === $latestYear && (int) $month >= $latestMonth)) {
+                $isLatestPeriod = true;
+            } else {
+                $isLatestPeriod = false;
+            }
         }
 
-        return view('billing.index', compact('invoices', 'customers', 'month', 'year', 'total_bill', 'paid_bill', 'unpaid_bill', 'admins', 'selectedAdminId', 'selectedOperatorId', 'operators', 'customerBalances', 'arrearsByCustomer', 'total_excess_to_balance', 'total_underpayment', 'total_revenue', 'excessByInvoice', 'paymentAdminByInvoice', 'isLatestPeriod'));
+        return view('billing.index', compact('invoices', 'customers', 'month', 'year', 'total_bill', 'paid_bill', 'unpaid_bill', 'admins', 'selectedAdminId', 'selectedOperatorId', 'operators', 'customerBalances', 'arrearsByCustomer', 'total_excess_to_balance', 'total_underpayment', 'total_revenue', 'excessByInvoice', 'paymentAdminByInvoice', 'isLatestPeriod', 'allArrearsMap', 'total_balance_used'));
     }
 
     public function generate(Request $request)
@@ -214,18 +244,32 @@ class BillingController extends Controller
             return back()->with('error', 'Tidak ada pelanggan aktif yang ditemukan untuk akun Anda.');
         }
 
+        $activeCustomerIds = $activeCustomers->pluck('id')->toArray();
+
+        // 1. Get existing invoices for the selected month to check existence efficiently
+        $existingInvoiceCustomerIds = Invoice::whereIn('customer_id', $activeCustomerIds)
+            ->whereMonth('due_date', $request->month)
+            ->whereYear('due_date', $request->year)
+            ->pluck('customer_id')
+            ->toArray();
+
+        // 2. Get all previous unpaid invoices
+        $allPreviousUnpaid = Invoice::whereIn('customer_id', $activeCustomerIds)
+            ->where('status', 'unpaid')
+            ->get();
+            
+        $unpaidMap = [];
+        foreach ($allPreviousUnpaid as $inv) {
+            $unpaidMap[$inv->customer_id][] = $inv;
+        }
+
         $count = 0;
         foreach ($activeCustomers as $customer) {
-            $exists = Invoice::where('customer_id', $customer->id)
-                ->whereMonth('due_date', $request->month)
-                ->whereYear('due_date', $request->year)
-                ->exists();
+            $exists = in_array($customer->id, $existingInvoiceCustomerIds);
 
             if (!$exists) {
                 // Calculate previous arrears
-                $previousUnpaidInvoices = Invoice::where('customer_id', $customer->id)
-                    ->where('status', 'unpaid')
-                    ->get();
+                $previousUnpaidInvoices = $unpaidMap[$customer->id] ?? [];
 
                 $previousUnderpayment = 0;
                 $carriedInvoiceIds = [];
@@ -240,13 +284,17 @@ class BillingController extends Controller
 
                 $totalPrice = $customer->monthly_price + $previousUnderpayment;
 
+                $status = ($totalPrice == 0) ? 'paid' : 'unpaid';
+
                 Invoice::create([
                     'customer_id' => $customer->id,
                     'admin_id' => $customer->admin_id,
                     'due_date' => $request->due_date,
                     'price' => $totalPrice,
                     'carried_underpayment' => $previousUnderpayment,
-                    'status' => 'unpaid',
+                    'status' => $status,
+                    'paid_at' => ($status === 'paid') ? now() : null,
+                    'payment_method' => ($status === 'paid') ? 'free' : null,
                 ]);
 
                 // Mark old unpaid invoices as 'carried'
@@ -343,6 +391,8 @@ class BillingController extends Controller
         $basePrice = $customer->monthly_price;
         $totalPrice = $basePrice + $previousUnderpayment;
 
+        $status = ($totalPrice == 0) ? 'paid' : 'unpaid';
+
         // Create the invoice first
         $invoice = Invoice::create([
             'customer_id' => $customer->id,
@@ -350,7 +400,9 @@ class BillingController extends Controller
             'due_date' => $request->due_date,
             'price' => $totalPrice,
             'carried_underpayment' => $previousUnderpayment,
-            'status' => 'unpaid',
+            'status' => $status,
+            'paid_at' => ($status === 'paid') ? now() : null,
+            'payment_method' => ($status === 'paid') ? 'free' : null,
         ]);
 
         // Mark old unpaid invoices as 'carried' so they won't be double-counted
@@ -367,7 +419,12 @@ class BillingController extends Controller
         $autoPayStatus = 'created';
         $autoPayMsg = '';
 
-        if ($balance > 0) {
+        if ($status === 'paid') {
+            $autoPayStatus = 'auto_paid';
+            $autoPayMsg = ' (Lunas otomatis karena harga 0)';
+            $customer->update(['is_active' => true]);
+            $this->enableMikrotik($customer->pppoe_username);
+        } elseif ($balance > 0) {
             if ($balance >= $totalPrice) {
                 // Saldo cukup — lunas otomatis
                 $customer->balance -= $totalPrice;
@@ -475,6 +532,8 @@ class BillingController extends Controller
         $basePrice = $request->price ?? $customer->monthly_price;
         $totalPrice = $basePrice + $previousUnderpayment;
 
+        $status = ($totalPrice == 0) ? 'paid' : 'unpaid';
+
         // Create invoice
         $invoice = Invoice::create([
             'customer_id' => $request->customer_id,
@@ -482,7 +541,9 @@ class BillingController extends Controller
             'due_date' => $request->due_date,
             'price' => $totalPrice,
             'carried_underpayment' => $previousUnderpayment,
-            'status' => 'unpaid',
+            'status' => $status,
+            'paid_at' => ($status === 'paid') ? now() : null,
+            'payment_method' => ($status === 'paid') ? 'free' : null,
         ]);
 
         // Mark old unpaid invoices as 'carried' so they won't be double-counted
@@ -498,7 +559,11 @@ class BillingController extends Controller
         $balance = (float) $customer->balance;
         $statusMsg = 'Tagihan manual berhasil dibuat!';
 
-        if ($balance > 0) {
+        if ($status === 'paid') {
+            $statusMsg = 'Tagihan manual berhasil dibuat & lunas otomatis (Gratis / Harga 0).';
+            $customer->update(['is_active' => true]);
+            $this->enableMikrotik($customer->pppoe_username);
+        } elseif ($balance > 0) {
             if ($balance >= $totalPrice) {
                 // Saldo cukup — lunas otomatis
                 $customer->balance -= $totalPrice;

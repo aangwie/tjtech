@@ -17,7 +17,7 @@ class AssetController extends Controller
         if ($user->isSuperAdmin()) {
             $assets = Asset::with('admin')->latest()->get();
         } else {
-            $assets = Asset::where('admin_id', $user->id)->latest()->get();
+            $assets = Asset::with('admin')->where('admin_id', $user->id)->latest()->get();
         }
 
         $total_quantity = $assets->sum('jumlah_barang');
