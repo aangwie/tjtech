@@ -328,6 +328,12 @@
                             <i class="fas fa-box w-4 text-center text-xs"></i>
                             Data Aset
                         </a>
+                        <a href="{{ route('asset.disposal.index') }}"
+                            class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
+                                                                                {{ request()->routeIs('asset.disposal.*') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                            <i class="fas fa-trash-alt w-4 text-center text-xs"></i>
+                            Penghapusan Aset
+                        </a>
                         <a href="{{ route('asset.report') }}"
                             class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
                                                                                 {{ request()->routeIs('asset.report') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">

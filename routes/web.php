@@ -25,6 +25,7 @@ use App\Http\Controllers\SiteSettingController;
 use App\Http\Controllers\ControlController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\AssetDisposalController;
 
 
 /*
@@ -179,6 +180,9 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/asset/{id}', [AssetController::class, 'destroy'])->name('asset.destroy');
         Route::get('/asset/laporan', [AssetController::class, 'report'])->name('asset.report');
         Route::post('/asset/laporan/cetak', [AssetController::class, 'printReport'])->name('asset.print');
+        
+        Route::get('/asset/disposal', [AssetDisposalController::class, 'index'])->name('asset.disposal.index');
+        Route::post('/asset/disposal', [AssetDisposalController::class, 'store'])->name('asset.disposal.store');
 
         // TRAFFIC MONITOR
         Route::get('/traffic', [TrafficController::class, 'index'])->name('traffic.index');
@@ -254,6 +258,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/customers/{id}/topup-history', [CustomerController::class, 'getTopupHistory'])->name('customers.topupHistory');
     Route::put('/customers/topup/{topupId}', [CustomerController::class, 'updateTopup'])->name('customers.updateTopup');
     Route::delete('/customers/topup/{topupId}', [CustomerController::class, 'deleteTopup'])->name('customers.deleteTopup');
+    Route::get('/customers/print-all-card', [CustomerController::class, 'printAllCards'])->name('customers.printAllCards');
+    Route::get('/customers/{id}/print-card', [CustomerController::class, 'printCard'])->name('customers.printCard');
     Route::resource('customers', CustomerController::class);
 });
 

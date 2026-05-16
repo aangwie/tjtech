@@ -21,7 +21,25 @@ class AssetController extends Controller
         }
 
         $total_quantity = $assets->sum('jumlah_barang');
-        $total_value = $assets->sum('harga_perolehan');
+        
+        $currentYear = date('Y');
+        $total_value = 0;
+
+        foreach ($assets as $asset) {
+            $nilaiBuku = $asset->harga_perolehan;
+            
+            if ($asset->has_penyusutan && $asset->nilai_penyusutan > 0) {
+                $umur = $currentYear - $asset->tahun_perolehan;
+                if ($umur < 0) $umur = 0;
+                
+                $akumulasiPenyusutan = $umur * ($asset->nilai_penyusutan * $asset->jumlah_barang);
+                
+                $nilaiBuku = $asset->harga_perolehan - $akumulasiPenyusutan;
+                if ($nilaiBuku < 0) $nilaiBuku = 0;
+            }
+            
+            $total_value += $nilaiBuku;
+        }
 
         return view('asset.index', compact('assets', 'total_quantity', 'total_value'));
     }

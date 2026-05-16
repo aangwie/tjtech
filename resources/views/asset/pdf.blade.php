@@ -88,6 +88,11 @@
             <td>{{ $tahunFilter ? $tahunFilter : 'Semua Tahun' }}</td>
         </tr>
         <tr>
+            <td><b>Total Jumlah Barang</b></td>
+            <td>:</td>
+            <td>{{ $assets->sum('jumlah_barang') }} Unit</td>
+        </tr>
+        <tr>
             <td><b>Status Penyusutan</b></td>
             <td>:</td>
             <td>{{ $hitungPenyusutan ? 'Ditampilkan' : 'Tidak Ditampilkan' }}</td>
@@ -144,7 +149,7 @@
                         $umur = $currentYear - $asset->tahun_perolehan;
                         if ($umur < 0) $umur = 0;
                         
-                        $akumulasiPenyusutan = $umur * $asset->nilai_penyusutan;
+                        $akumulasiPenyusutan = $umur * ($asset->nilai_penyusutan * $asset->jumlah_barang);
                         
                         // Nilai buku tidak boleh minus
                         $nilaiBuku = $asset->harga_perolehan - $akumulasiPenyusutan;
@@ -176,7 +181,7 @@
                     @if($hitungPenyusutan)
                         <td class="right">
                             @if($asset->has_penyusutan)
-                                Rp {{ number_format($asset->nilai_penyusutan, 0, ',', '.') }}
+                                Rp {{ number_format($asset->nilai_penyusutan * $asset->jumlah_barang, 0, ',', '.') }}
                             @else
                                 -
                             @endif

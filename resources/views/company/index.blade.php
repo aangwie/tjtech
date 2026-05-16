@@ -140,6 +140,32 @@
 
                         <hr class="border-slate-100">
 
+                        <!-- Logo 2 Input -->
+                        <div>
+                            <label class="block text-sm font-bold text-slate-900 mb-2">Logo 2 (Opsional)</label>
+                            <div class="flex items-center gap-4 mb-4">
+                                @if($company->logo2_base64)
+                                    <div
+                                        class="h-20 w-20 rounded-lg border border-slate-200 p-1 bg-slate-50 flex items-center justify-center overflow-hidden">
+                                        <img src="{{ $company->logo2_base64 }}" class="max-h-full max-w-full"
+                                            alt="Logo 2">
+                                    </div>
+                                @else
+                                    <div
+                                        class="h-20 w-20 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400">
+                                        <i class="fas fa-image text-2xl"></i>
+                                    </div>
+                                @endif
+                            </div>
+                            <input type="file" name="logo2" id="logo2_input"
+                                class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                                accept="image/*">
+                            <p class="mt-2 text-xs text-slate-500">Maksimum ukuran: 500 KB.</p>
+                            <p id="logo2_error" class="mt-1 text-xs text-red-500 hidden">Ukuran file melebihi 500 KB!</p>
+                        </div>
+
+                        <hr class="border-slate-100">
+
                         <!-- Signature Input -->
                         <div>
                             <label class="block text-sm font-bold text-slate-900 mb-2">Tanda Tangan / Stempel</label>
@@ -176,3 +202,18 @@
     </form>
 
 @endsection
+
+@push('scripts')
+<script>
+    document.getElementById('logo2_input').addEventListener('change', function() {
+        const file = this.files[0];
+        const errorMsg = document.getElementById('logo2_error');
+        if (file && file.size > 500 * 1024) { // 500KB
+            errorMsg.classList.remove('hidden');
+            this.value = ''; // Reset input
+        } else {
+            errorMsg.classList.add('hidden');
+        }
+    });
+</script>
+@endpush

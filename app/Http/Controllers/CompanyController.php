@@ -26,6 +26,7 @@ class CompanyController extends Controller
             'account_holder' => 'nullable|string',
             'logo' => 'nullable|image|max:2048',
             'signature' => 'nullable|image|max:2048',
+            'logo2' => 'nullable|image|max:500',
         ]);
 
         // TenantScope automatically filters this
@@ -67,8 +68,16 @@ class CompanyController extends Controller
             $company->signature_path = $path;
         }
 
+        // 3. UPLOAD LOGO 2 (Base64)
+        if ($request->hasFile('logo2')) {
+            $file = $request->file('logo2');
+            $base64 = base64_encode(file_get_contents($file));
+            $mimeType = $file->getClientMimeType();
+            $company->logo2_base64 = 'data:' . $mimeType . ';base64,' . $base64;
+        }
+
         $company->save();
 
-        return back()->with('success', 'Data perusahaan berhasil disimpan (Direct Upload).');
+        return back()->with('success', 'Data perusahaan berhasil disimpan.');
     }
 }

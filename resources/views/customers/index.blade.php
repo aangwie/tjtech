@@ -185,6 +185,12 @@
                                 <td class="px-4 py-3 align-middle text-right">
                                     <div class="flex justify-end gap-2">
                                         <button type="button"
+                                            onclick="choosePrintFormat({{ $c->id }})"
+                                            class="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                                            title="Cetak Kartu Router">
+                                            <i class="fas fa-print"></i>
+                                        </button>
+                                        <button type="button"
                                             onclick="openTopUpSwal({{ $c->id }}, '{{ addslashes($c->name) }}', {{ (float)$c->balance }})"
                                             class="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md transition-colors"
                                             title="Top Up Saldo">
@@ -783,7 +789,14 @@
         var defaultLat = -6.200000, defaultLng = 106.816666;
 
         $(document).ready(function () {
-            $('#tableCust').DataTable({ responsive: true });
+            var dt = $('#tableCust').DataTable({ responsive: true });
+
+            // Menambahkan tombol cetak semua di sebelah kotak search (bisa untuk versi dt-search atau dataTables_filter)
+            $('.dt-search, .dataTables_filter').prepend(`
+                <button type="button" onclick="choosePrintAllFormat()" class="mr-4 inline-flex items-center rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-900/50 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 shadow-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all">
+                    <i class="fas fa-print mr-2"></i> Cetak Semua Kartu
+                </button>
+            `);
 
             // Logic Open Modal Edit via jQuery -> Alpine
             $('#tableCust').on('click', '.btn-edit', function () {
@@ -1154,6 +1167,51 @@
                     });
                 }
             });
+        }
+
+        function choosePrintFormat(id) {
+            Swal.fire({
+                title: 'Pilih Format Cetak',
+                text: 'Kartu Informasi Router',
+                icon: 'question',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-file-pdf mr-1"></i> Cetak PDF',
+                denyButtonText: '<i class="fas fa-image mr-1"></i> Cetak JPG',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#352f99',
+                denyButtonColor: '#10b981',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.open(`/customers/${id}/print-card?type=pdf`, '_blank');
+                } else if (result.isDenied) {
+                    window.open(`/customers/${id}/print-card?type=jpg`, '_blank');
+                }
+            })
+        }
+
+        function choosePrintAllFormat() {
+            Swal.fire({
+                title: 'Cetak Semua Kartu',
+                text: 'Pilih format keluaran untuk mencetak seluruh pelanggan.',
+                icon: 'question',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-file-pdf mr-1"></i> PDF (Folio)',
+                denyButtonText: '<i class="fas fa-file-archive mr-1"></i> JPG (.zip)',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#352f99',
+                denyButtonColor: '#10b981',
+            }).then((result) => {
+                let adminId = $('select[name="admin_id"]').val() || '';
+                let queryStr = adminId ? `?admin_id=${adminId}&` : '?';
+                
+                if (result.isConfirmed) {
+                    window.open(`/customers/print-all-card${queryStr}type=pdf`, '_blank');
+                } else if (result.isDenied) {
+                    window.open(`/customers/print-all-card${queryStr}type=jpg`, '_blank');
+                }
+            })
         }
     </script>
 @endpush

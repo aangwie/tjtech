@@ -10,6 +10,8 @@ use App\Exports\CustomersExport;
 use App\Imports\CustomersImport;
 use App\Exports\CustomerTemplateExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Company;
 
 class CustomerController extends Controller
 {
@@ -448,5 +450,80 @@ class CustomerController extends Controller
             'new_balance' => (float) $customer->balance,
             'new_balance_formatted' => 'Rp ' . number_format($customer->balance, 0, ',', '.'),
         ]);
+    }
+
+    /**
+     * Cetak Kartu Informasi Router
+     */
+    public function printCard(Request $request, $id)
+    {
+        $customer = Customer::findOrFail($id);
+        $company = Company::first() ?? new Company();
+
+        $data = [
+            'customer' => $customer,
+            'company' => $company
+        ];
+
+        if ($request->type == 'pdf') {
+            // Ukuran 12cm x 8cm dalam point (1cm = 28.346 pt)
+            // 12 * 28.346 = 340.152
+            // 8 * 28.346 = 226.768
+            $customPaper = array(0, 0, 340.152, 226.768);
+            
+            $pdf = Pdf::loadView('customers.card', $data)->setPaper($customPaper, 'landscape');
+            return $pdf->stream('kartu-router-' . $customer->internet_number . '.pdf');
+        } elseif ($request->type == 'jpg') {
+            return view('customers.card-jpg', $data);
+        }
+
+        return back()->with('error', 'Format cetak tidak valid.');
+    }
+
+    /**
+     * Cetak Semua Kartu Informasi Router
+     */
+    public function printAllCards(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Sesuaikan query pengambilan pelanggan berdasarkan role (mirip dengan index)
+        $query = Customer::query();
+        if ($user->role == 'operator') {
+            $query->where('operator_id', $user->id);
+        } elseif ($user->isSuperAdmin() && $request->has('admin_id')) {
+            $query->where('admin_id', $request->admin_id);
+        }
+
+        $customers = $query->orderBy('name', 'asc')->get();
+        $company = Company::first() ?? new Company();
+
+        if ($customers->isEmpty()) {
+            return back()->with('error', 'Tidak ada data pelanggan untuk dicetak.');
+        }
+
+        $data = [
+            'customers' => $customers,
+            'company' => $company
+        ];
+
+        if ($request->type == 'pdf') {
+            // Ukuran Folio / F4: 8.5 x 13 inchi (612 x 936 point)
+            $folioPaper = array(0, 0, 612, 936);
+            
+            $pdf = Pdf::loadView('customers.print-all-pdf', $data)->setPaper($folioPaper, 'landscape');
+            return $pdf->stream('Semua-Kartu-Router.pdf');
+        } elseif ($request->type == 'jpg') {
+            $data['customers_json'] = $customers->map(function($c) {
+                return [
+                    'inet' => $c->internet_number,
+                    'name' => strtoupper($c->name ?? ''),
+                    'filename' => preg_replace('/[^A-Za-z0-9\-]/', '_', $c->name ?? 'Unknown')
+                ];
+            });
+            return view('customers.print-all-jpg', $data);
+        }
+
+        return back()->with('error', 'Format cetak tidak valid.');
     }
 }

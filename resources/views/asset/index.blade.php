@@ -157,7 +157,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                             @if($asset->has_penyusutan && $asset->nilai_penyusutan > 0)
-                                Rp {{ number_format($asset->nilai_penyusutan, 0, ',', '.') }} / thn
+                                Rp {{ number_format($asset->nilai_penyusutan * $asset->jumlah_barang, 0, ',', '.') }} / thn
                             @else
                                 <span class="italic text-slate-400">-</span>
                             @endif
