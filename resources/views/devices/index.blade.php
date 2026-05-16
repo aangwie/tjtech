@@ -102,10 +102,12 @@
             <thead class="bg-slate-50 dark:bg-slate-900/50">
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">No</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Thumbnail</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nama Perangkat</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gambar</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Jenis</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nama</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rasio</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Redaman</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">IP Addr</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Keterangan</th>
                     <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aksi</th>
                 </tr>
@@ -124,6 +126,11 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+                                {{ $device->kategori }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-slate-900 dark:text-white">{{ $device->nama }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -132,12 +139,19 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-slate-900 dark:text-white">{{ $device->redaman ? $device->redaman . ' dB' : '-' }}</div>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if(in_array($device->kategori, ['Router', 'HTB']))
+                                <div class="text-sm text-slate-900 dark:text-white font-mono">{{ $device->ip_address ?: '-' }}</div>
+                            @else
+                                <div class="text-sm text-slate-400 dark:text-slate-500">-</div>
+                            @endif
+                        </td>
                         <td class="px-6 py-4">
                             <div class="text-sm text-slate-900 dark:text-white">{{ $device->keterangan ?: '-' }}</div>
                             @if($device->latitude && $device->longitude)
                             <div class="text-xs text-slate-500 mt-1">
                                 <a href="https://maps.google.com/?q={{ $device->latitude }},{{ $device->longitude }}" target="_blank" class="text-blue-500 hover:underline">
-                                    <i class="fas fa-map-marker-alt"></i> {{ $device->latitude }}, {{ $device->longitude }}
+                                    <i class="fas fa-map-marker-alt"></i> {{ substr($device->latitude, 0, 6) }}, {{ substr($device->longitude, 0, 6) }}
                                 </a>
                             </div>
                             @endif
@@ -157,7 +171,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                        <td colspan="9" class="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                             <div class="flex flex-col items-center justify-center">
                                 <i class="fas fa-microchip text-4xl mb-3 text-slate-300 dark:text-slate-600"></i>
                                 <p>Belum ada data perangkat.</p>
@@ -197,6 +211,35 @@
                             <label for="nama" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Perangkat <span class="text-red-500">*</span></label>
                             <input type="text" name="nama" id="nama" required
                                 class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white transition-colors">
+                        </div>
+
+                        <div>
+                            <label for="kategori" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategori <span class="text-red-500">*</span></label>
+                            <select name="kategori" id="kategori" required onchange="toggleCustomerField()"
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white transition-colors">
+                                <option value="ODP">ODP</option>
+                                <option value="Router">Router</option>
+                                <option value="HTB">HTB</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+
+                        <div id="customer_container" class="hidden">
+                            <label for="customer_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pelanggan</label>
+                            <select name="customer_id" id="customer_id" onchange="fetchCustomerIp()"
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white transition-colors">
+                                <option value="">-- Pilih Pelanggan --</option>
+                                @foreach($customers as $c)
+                                    <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->internet_number }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div id="ip_address_container" class="hidden">
+                            <label for="ip_address" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">IP Address</label>
+                            <input type="text" name="ip_address" id="ip_address" readonly
+                                class="block w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:text-white transition-colors cursor-not-allowed">
+                            <p class="text-xs text-slate-500 mt-1" id="ip_status_text">Otomatis didapatkan dari Mikrotik</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -345,6 +388,14 @@
             methodInput.value = 'PUT';
             
             document.getElementById('nama').value = device.nama;
+            document.getElementById('kategori').value = device.kategori || 'ODP';
+            toggleCustomerField();
+            if (device.customer_id) {
+                document.getElementById('customer_id').value = device.customer_id;
+            } else {
+                document.getElementById('customer_id').value = '';
+            }
+            document.getElementById('ip_address').value = device.ip_address || '';
             document.getElementById('rasio').value = device.rasio || '';
             document.getElementById('redaman').value = device.redaman || '';
             document.getElementById('keterangan').value = device.keterangan || '';
@@ -370,6 +421,48 @@
 
     function closeDeviceModal() {
         document.getElementById('deviceModal').classList.add('hidden');
+    }
+
+    function toggleCustomerField() {
+        const kategori = document.getElementById('kategori').value;
+        const custContainer = document.getElementById('customer_container');
+        const ipContainer = document.getElementById('ip_address_container');
+        
+        if (kategori === 'Router' || kategori === 'HTB') {
+            custContainer.classList.remove('hidden');
+            ipContainer.classList.remove('hidden');
+        } else {
+            custContainer.classList.add('hidden');
+            ipContainer.classList.add('hidden');
+            document.getElementById('customer_id').value = '';
+            document.getElementById('ip_address').value = '';
+        }
+    }
+
+    function fetchCustomerIp() {
+        const customerId = document.getElementById('customer_id').value;
+        const ipInput = document.getElementById('ip_address');
+        const statusText = document.getElementById('ip_status_text');
+        
+        if (!customerId) {
+            ipInput.value = '';
+            statusText.innerText = 'Pilih pelanggan untuk melihat IP Address';
+            return;
+        }
+
+        ipInput.value = 'Mencari...';
+        statusText.innerText = 'Mengambil data dari Mikrotik...';
+
+        fetch(`/devices/customer-ip/${customerId}`)
+            .then(response => response.json())
+            .then(data => {
+                ipInput.value = data.ip_address;
+                statusText.innerText = data.ip_address.includes('Offline') ? 'Pelanggan sedang offline atau IP tidak ditemukan.' : 'Berhasil didapatkan.';
+            })
+            .catch(error => {
+                ipInput.value = '';
+                statusText.innerText = 'Gagal mengambil IP Address.';
+            });
     }
 </script>
 @endpush

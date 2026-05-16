@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Device;
+use App\Models\Customer;
+use App\Services\MikrotikService;
 use Illuminate\Http\Request;
 
 class DeviceController extends Controller
@@ -12,8 +14,9 @@ class DeviceController extends Controller
      */
     public function index()
     {
-        $devices = Device::latest()->get();
-        return view('devices.index', compact('devices'));
+        $devices = Device::with('customer')->latest()->get();
+        $customers = Customer::orderBy('name')->get();
+        return view('devices.index', compact('devices', 'customers'));
     }
 
     /**
@@ -31,6 +34,9 @@ class DeviceController extends Controller
     {
         $request->validate([
             'nama' => 'required|string|max:255',
+            'kategori' => 'required|string|in:ODP,Router,HTB,Lainnya',
+            'customer_id' => 'nullable|exists:customers,id',
+            'ip_address' => 'nullable|string|max:50',
             'keterangan' => 'nullable|string',
             'rasio' => 'nullable|string|max:50',
             'redaman' => 'nullable|string|max:50',
@@ -73,6 +79,9 @@ class DeviceController extends Controller
     {
         $request->validate([
             'nama' => 'required|string|max:255',
+            'kategori' => 'required|string|in:ODP,Router,HTB,Lainnya',
+            'customer_id' => 'nullable|exists:customers,id',
+            'ip_address' => 'nullable|string|max:50',
             'keterangan' => 'nullable|string',
             'rasio' => 'nullable|string|max:50',
             'redaman' => 'nullable|string|max:50',
@@ -104,6 +113,39 @@ class DeviceController extends Controller
         $device->delete();
 
         return redirect()->route('devices.index')->with('success', 'Perangkat berhasil dihapus');
+    }
+
+    /**
+     * Get Customer IP via Mikrotik
+     */
+    public function getCustomerIp(Request $request, $id)
+    {
+        $customer = Customer::findOrFail($id);
+        
+        try {
+            $mikrotik = app(MikrotikService::class);
+            if ($mikrotik->isConnected()) {
+                // Try Active Connections first
+                $activeUsers = collect($mikrotik->getActiveUsers());
+                $active = $activeUsers->firstWhere('name', $customer->pppoe_username);
+                
+                if ($active && isset($active['address'])) {
+                    return response()->json(['ip_address' => $active['address']]);
+                }
+
+                // If not active, check Secrets (remote-address might be assigned)
+                $secrets = collect($mikrotik->getSecrets());
+                $secret = $secrets->firstWhere('name', $customer->pppoe_username);
+                
+                if ($secret && isset($secret['remote-address'])) {
+                    return response()->json(['ip_address' => $secret['remote-address']]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently fail to return offline fallback
+        }
+
+        return response()->json(['ip_address' => '- (Offline/No IP)']);
     }
 
     /**

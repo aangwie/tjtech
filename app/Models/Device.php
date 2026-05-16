@@ -8,6 +8,9 @@ class Device extends Model
 {
     protected $fillable = [
         'nama', 
+        'kategori',
+        'customer_id',
+        'ip_address',
         'keterangan',
         'rasio',
         'redaman',
@@ -15,6 +18,11 @@ class Device extends Model
         'longitude',
         'foto'
     ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
 
     public function sourceRelations()
     {

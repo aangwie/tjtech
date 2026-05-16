@@ -196,6 +196,9 @@ Route::middleware(['auth'])->group(function () {
         // Device Map
         Route::get('device-map', [DeviceMapController::class, 'index'])->name('device-map.index');
 
+        // Fetch Customer IP for Devices
+        Route::get('devices/customer-ip/{id}', [DeviceController::class, 'getCustomerIp'])->name('devices.customer_ip');
+
         // TRAFFIC MONITOR
         Route::get('/traffic', [TrafficController::class, 'index'])->name('traffic.index');
         Route::post('/traffic/data', [TrafficController::class, 'data'])->name('traffic.data');
