@@ -118,7 +118,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{{ $index + 1 }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($device->foto)
-                                <img src="{{ asset('uploads/' . $device->foto) }}" alt="{{ $device->nama }}" class="w-16 h-16 object-cover rounded-lg shadow-sm border border-slate-200 dark:border-slate-600">
+                                <img src="{{ asset('uploads/' . $device->foto) }}" alt="{{ $device->nama }}" onclick="openImagePreview('{{ asset('uploads/' . $device->foto) }}')" class="w-16 h-16 object-cover rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 cursor-pointer hover:opacity-80 transition-opacity">
                             @else
                                 <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-600">
                                     <i class="fas fa-image text-slate-400"></i>
@@ -299,6 +299,16 @@
         </div>
     </div>
 </div>
+
+<!-- Image Preview Modal -->
+<div id="imagePreviewModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeImagePreview()">
+    <div class="relative w-[800px] max-w-[90vw] h-[600px] max-h-[90vh] flex items-center justify-center" onclick="event.stopPropagation()">
+        <button type="button" onclick="closeImagePreview()" class="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors bg-black/40 hover:bg-black/60 rounded-full w-10 h-10 flex items-center justify-center">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        <img id="previewImage" src="" alt="Preview" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl bg-black/20">
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -463,6 +473,16 @@
                 ipInput.value = '';
                 statusText.innerText = 'Gagal mengambil IP Address.';
             });
+    }
+
+    function openImagePreview(url) {
+        document.getElementById('previewImage').src = url;
+        document.getElementById('imagePreviewModal').classList.remove('hidden');
+    }
+
+    function closeImagePreview() {
+        document.getElementById('imagePreviewModal').classList.add('hidden');
+        document.getElementById('previewImage').src = '';
     }
 </script>
 @endpush
