@@ -105,7 +105,7 @@
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gambar</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Jenis</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nama</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rasio</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Split</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Redaman</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">IP Addr</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Keterangan</th>
@@ -151,20 +151,20 @@
                             @if($device->latitude && $device->longitude)
                             <div class="text-xs text-slate-500 mt-1">
                                 <a href="https://maps.google.com/?q={{ $device->latitude }},{{ $device->longitude }}" target="_blank" class="text-blue-500 hover:underline">
-                                    <i class="fas fa-map-marker-alt"></i> {{ substr($device->latitude, 0, 6) }}, {{ substr($device->longitude, 0, 6) }}
+                                    <i class="fas fa-map-marker-alt"></i> {{ substr($device->latitude, 0, 10) }}, {{ substr($device->longitude, 0, 10) }}
                                 </a>
                             </div>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button type="button" onclick="openDeviceModal({{ $device->toJson() }})" class="text-[#352f99] hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3 transition-colors">
-                                <i class="fas fa-edit"></i> Edit
+                                <i class="fas fa-edit"></i>
                             </button>
                             <form action="{{ route('devices.destroy', $device->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menghapus perangkat ini?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors">
-                                    <i class="fas fa-trash-alt"></i> Hapus
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </form>
                         </td>
@@ -244,7 +244,7 @@
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label for="rasio" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Rasio</label>
+                                <label for="rasio" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Splitter</label>
                                 <input type="text" name="rasio" id="rasio" placeholder="Contoh: 1:8"
                                     class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white transition-colors">
                             </div>

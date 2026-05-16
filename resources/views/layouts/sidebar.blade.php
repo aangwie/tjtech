@@ -110,9 +110,10 @@
 
                 {{-- Manajemen submenu --}}
                 <div
-                    x-data="{ open: {{ request()->routeIs('customers.*') || request()->routeIs('billing.*') || request()->routeIs('accounting.*') || request()->routeIs('report.*') ? 'true' : 'false' }} }">
+                    x-data="{ open: {{ request()->routeIs('customers.*') || request()->routeIs('billing.*') || request()->routeIs('accounting.*') || request()->routeIs('report.*') ? 'true' : 'false' }} }"
+                    @submenu-opened.window="if ($event.detail !== 'manajemen') open = false">
                     <button
-                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }"
+                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }; if(open) $dispatch('submenu-opened', 'manajemen')"
                         type="button"
                         class="group relative w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                                                                                                     {{ request()->routeIs('customers.*') || request()->routeIs('billing.*') || request()->routeIs('accounting.*') || request()->routeIs('report.*') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
@@ -184,9 +185,10 @@
                 </div>
 
                 {{-- Hotspot submenu --}}
-                <div x-data="{ open: {{ request()->routeIs('hotspot.*') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs('hotspot.*') ? 'true' : 'false' }} }"
+                    @submenu-opened.window="if ($event.detail !== 'hotspot') open = false">
                     <button
-                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }"
+                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }; if(open) $dispatch('submenu-opened', 'hotspot')"
                         type="button"
                         class="group relative w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                                                                                                     {{ request()->routeIs('hotspot.*') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
@@ -221,9 +223,10 @@
 
                 {{-- Monitor submenu --}}
                 <div
-                    x-data="{ open: {{ request()->routeIs('monitor.*') || request()->routeIs('pppoe.dashboard') ? 'true' : 'false' }} }">
+                    x-data="{ open: {{ request()->routeIs('monitor.*') || request()->routeIs('pppoe.dashboard') ? 'true' : 'false' }} }"
+                    @submenu-opened.window="if ($event.detail !== 'monitor') open = false">
                     <button
-                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }"
+                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }; if(open) $dispatch('submenu-opened', 'monitor')"
                         type="button"
                         class="group relative w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                                                                                                     {{ request()->routeIs('monitor.*') || request()->routeIs('pppoe.dashboard') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
@@ -301,9 +304,10 @@
                         class="hidden lg:block border-t border-slate-200 dark:border-slate-700 mx-2" style="display:none;">
                     </div>
                 </div>
-                <div x-data="{ open: {{ request()->routeIs('asset.*') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs('asset.*') ? 'true' : 'false' }} }"
+                    @submenu-opened.window="if ($event.detail !== 'aset') open = false">
                     <button
-                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }"
+                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }; if(open) $dispatch('submenu-opened', 'aset')"
                         type="button"
                         class="group relative w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                                                                                                     {{ request()->routeIs('asset.*') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
@@ -353,9 +357,10 @@
                         class="hidden lg:block border-t border-slate-200 dark:border-slate-700 mx-2" style="display:none;">
                     </div>
                 </div>
-                <div x-data="{ open: {{ request()->routeIs('device*') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->routeIs('device*') ? 'true' : 'false' }} }"
+                    @submenu-opened.window="if ($event.detail !== 'perangkat') open = false">
                     <button
-                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }"
+                        @click="if(sidebarCollapsed && window.innerWidth >= 1024) { toggleSidebar(); open = true; } else { open = !open }; if(open) $dispatch('submenu-opened', 'perangkat')"
                         type="button"
                         class="group relative w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                                                     {{ request()->routeIs('device*') ? 'bg-[#352f99]/10 text-[#352f99] dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }}"
