@@ -26,7 +26,9 @@ use App\Http\Controllers\ControlController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetDisposalController;
-
+use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\DeviceRelationController;
+use App\Http\Controllers\DeviceMapController;
 
 /*
 |--------------------------------------------------------------------------
@@ -92,8 +94,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/pppoe', [PppoeController::class, 'index'])->name('pppoe.dashboard');
     //Route Maps Pelanggan
     Route::get('/maps', [App\Http\Controllers\MapController::class, 'index'])->name('maps.index');
-
-    // ... (SISA SEMUA ROUTE LAMA ANDA : BILLING, ADMIN, OPERATOR TETAP DISINI) ...
 
     // Billing
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
@@ -183,6 +183,18 @@ Route::middleware(['auth'])->group(function () {
         
         Route::get('/asset/disposal', [AssetDisposalController::class, 'index'])->name('asset.disposal.index');
         Route::post('/asset/disposal', [AssetDisposalController::class, 'store'])->name('asset.disposal.store');
+
+        // MANAJEMEN PERANGKAT
+        Route::resource('devices', DeviceController::class)->except(['create', 'show', 'edit']);
+
+        // Device Relations
+        Route::get('device-relations', [DeviceRelationController::class, 'index'])->name('device-relations.index');
+        Route::post('device-relations', [DeviceRelationController::class, 'store'])->name('device-relations.store');
+        Route::put('device-relations/{source_id}', [DeviceRelationController::class, 'update'])->name('device-relations.update');
+        Route::delete('device-relations/{source_id}', [DeviceRelationController::class, 'destroy'])->name('device-relations.destroy');
+
+        // Device Map
+        Route::get('device-map', [DeviceMapController::class, 'index'])->name('device-map.index');
 
         // TRAFFIC MONITOR
         Route::get('/traffic', [TrafficController::class, 'index'])->name('traffic.index');
