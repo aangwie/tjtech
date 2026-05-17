@@ -42,6 +42,28 @@ class FrontendController extends Controller
     // 2. Proses Cek Tagihan
     public function check(Request $request)
     {
+        // Handle direct GET request from QR code scan
+        if ($request->isMethod('get')) {
+            if ($request->has('token')) {
+                try {
+                    $internet_number = decrypt($request->token);
+                    $request->merge(['internet_number' => $internet_number]);
+                } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+                    return redirect()->route('frontend.index')->with('error', 'Token QR Code tidak valid atau telah usang.');
+                }
+            }
+
+            if (!$request->has('internet_number')) {
+                return redirect()->route('frontend.index');
+            }
+            if (!$request->has('month')) {
+                $request->merge(['month' => date('n')]);
+            }
+            if (!$request->has('year')) {
+                $request->merge(['year' => date('Y')]);
+            }
+        }
+
         $request->validate([
             'internet_number' => 'required|string',
             'month' => 'required|numeric',
@@ -52,7 +74,7 @@ class FrontendController extends Controller
         $customer = Customer::where('internet_number', $request->internet_number)->first();
 
         if (!$customer) {
-            return back()->with('error', 'Nomor Internet tidak ditemukan.');
+            return redirect()->route('frontend.index')->with('error', 'Nomor Internet tidak ditemukan.');
         }
 
         // Cari Tagihan pada Bulan & Tahun tersebut
@@ -62,7 +84,7 @@ class FrontendController extends Controller
             ->first();
 
         if (!$invoice) {
-            return back()->with('error', 'Tidak ada tagihan ditemukan untuk periode tersebut.');
+            return redirect()->route('frontend.index')->with('error', 'Tidak ada tagihan ditemukan untuk periode tersebut.');
         }
 
         // Kembalikan ke halaman depan dengan membawa data invoice

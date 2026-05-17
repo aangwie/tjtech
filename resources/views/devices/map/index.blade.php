@@ -150,21 +150,21 @@
                     }
 
                     var htmlContent = `
-                            <div style="display:flex; align-items:flex-start; gap: 10px; text-align: left;">
-                                ${imgHtml}
-                                <div style="flex:1;">
-                                    <h4 style="margin:0; font-size:14px; font-weight:bold;">${device.nama}</h4>
-                                    <div style="font-size:12px; margin-top:4px;">
-                                        <div><strong>Kategori:</strong> ${device.kategori || 'ODP'}</div>
-                                        ${ipHtml}
-                                        <div><strong>Rasio:</strong> ${rasio}</div>
-                                        <div><strong>Redaman:</strong> ${redaman}</div>
-                                        <div><strong>Ket:</strong> ${ket}</div>
-                                        <div style="margin-top:2px; font-size: 10px;"><i class="fas fa-map-marker-alt"></i> ${lat}, ${lng}</div>
+                                <div style="display:flex; align-items:flex-start; gap: 10px; text-align: left;">
+                                    ${imgHtml}
+                                    <div style="flex:1;">
+                                        <h4 style="margin:0; font-size:14px; font-weight:bold;">${device.nama}</h4>
+                                        <div style="font-size:12px; margin-top:4px;">
+                                            <div><strong>Kategori:</strong> ${device.kategori || 'ODP'}</div>
+                                            ${ipHtml}
+                                            <div><strong>Splitter:</strong> ${rasio}</div>
+                                            <div><strong>Redaman:</strong> ${redaman}</div>
+                                            <div><strong>Ket:</strong> ${ket}</div>
+                                            <div style="margin-top:2px; font-size: 10px;"><i class="fas fa-map-marker-alt"></i> ${lat}, ${lng}</div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
 
                     // Attach mouseover event to show SweetAlert Toast
                     marker.on('mouseover', function (e) {

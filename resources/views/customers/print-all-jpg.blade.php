@@ -49,7 +49,7 @@
         }
 
         .card-body {
-            padding: 20px;
+            padding: 20px 15px;
             text-align: center;
             background-color: rgba(255, 255, 255, 0.8);
             height: calc(100% - 45px - 35px); /* Header and Footer height subtracted */
@@ -111,24 +111,33 @@
                 @endif
             </div>
 
-            <div class="card-body">
-                <div class="inline-block bg-[#352f99] text-white px-3 py-1.5 rounded text-sm font-bold tracking-wider mb-4">
-                    KARTU INFORMASI ROUTER
-                </div>
-                
-                <div class="bg-slate-50 border border-slate-200 border-dashed rounded-lg p-3 text-left w-full mx-auto max-w-[80%] relative z-10 overflow-hidden">
-                    @if($company->logo2_base64)
-                        <div class="absolute inset-0 flex items-center justify-center -z-10">
-                            <img src="{{ $company->logo2_base64 }}" class="h-full max-h-10 opacity-[0.15] mt-1">
-                        </div>
-                    @endif
-                    <div class="flex mb-2">
-                        <div class="text-[11px] text-slate-500 w-24">No. Internet</div>
-                        <div class="text-[12px] font-bold text-slate-900" id="card-inet">: -</div>
+            <div class="card-body flex flex-col justify-center">
+                <div class="w-full text-left">
+                    <div class="inline-block bg-[#352f99] text-white px-3 py-1.5 rounded text-sm font-bold tracking-wider mb-3 w-max">
+                        KARTU INFORMASI ROUTER
                     </div>
-                    <div class="flex">
-                        <div class="text-[11px] text-slate-500 w-24">Pelanggan</div>
-                        <div class="text-[12px] font-bold text-slate-900" id="card-name">: -</div>
+                    
+                    <div class="flex items-center justify-between gap-3 w-full">
+                        <div class="bg-slate-50 border border-slate-200 border-dashed rounded-lg p-3 text-left flex-1 relative z-10 overflow-hidden">
+                            @if($company->logo2_base64)
+                                <div class="absolute inset-0 flex items-center justify-center -z-10">
+                                    <img src="{{ $company->logo2_base64 }}" class="h-full max-h-10 opacity-[0.15] mt-1">
+                                </div>
+                            @endif
+                            <div class="flex mb-2">
+                                <div class="text-[11px] text-slate-500 w-24">No. Internet</div>
+                                <div class="text-[12px] font-bold text-slate-900" id="card-inet">: -</div>
+                            </div>
+                            <div class="flex">
+                                <div class="text-[11px] text-slate-500 w-24">Pelanggan</div>
+                                <div class="text-[12px] font-bold text-slate-900" id="card-name">: -</div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center flex flex-col items-center justify-center w-[2.8cm] shrink-0">
+                            <img id="card-qr" src="" alt="QR Code" class="w-[2.5cm] h-[2.5cm]">
+                            <div class="text-[8px] text-slate-500 mt-1 font-medium">Cek Tagihan</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -165,6 +174,7 @@
                 // 1. Update DOM
                 elInet.innerText = ': ' + cust.inet;
                 elName.innerText = ': ' + cust.name;
+                document.getElementById('card-qr').src = cust.qr_base64;
                 
                 // Sedikit jeda agar DOM ter-render
                 await new Promise(r => setTimeout(r, 50));

@@ -41,7 +41,7 @@ Route::get('/', [FrontendController::class, 'index'])->name('frontend.index');
 Route::get('/paket', [FrontendController::class, 'pricing'])->name('frontend.pricing');
 Route::get('/tentang-kami', [FrontendController::class, 'about'])->name('frontend.about');
 Route::get('/syarat-ketentuan', [FrontendController::class, 'terms'])->name('frontend.terms');
-Route::post('/check-bill', [FrontendController::class, 'check'])->name('frontend.check');
+Route::match(['get', 'post'], '/check-bill', [FrontendController::class, 'check'])->name('frontend.check');
 Route::get('/invoice/{id}/download', [FrontendController::class, 'downloadInvoice'])->name('frontend.invoice');
 
 // Login, Register & Reset Password

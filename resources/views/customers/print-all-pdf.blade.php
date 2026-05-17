@@ -53,7 +53,7 @@
         }
 
         .header {
-            padding: 10px;
+            padding: 10px 15px;
             height: 30px;
             background-color: rgba(255, 255, 255, 0.9);
             border-bottom: 1px solid #e5e7eb;

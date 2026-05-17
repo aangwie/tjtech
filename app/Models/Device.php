@@ -16,7 +16,12 @@ class Device extends Model
         'redaman',
         'latitude',
         'longitude',
-        'foto'
+        'foto',
+        'out_details'
+    ];
+
+    protected $casts = [
+        'out_details' => 'array',
     ];
 
     public function customer()

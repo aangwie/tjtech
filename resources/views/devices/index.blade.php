@@ -103,11 +103,9 @@
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">No</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gambar</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Jenis</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nama</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Split</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Redaman</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">IP Addr</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Keterangan</th>
                     <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aksi</th>
                 </tr>
@@ -126,25 +124,28 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
-                                {{ $device->kategori }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-medium text-slate-900 dark:text-white">{{ $device->nama }}</div>
+                            <div class="mt-1 flex items-center gap-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300">
+                                    {{ $device->kategori }}
+                                </span>
+                                @if(in_array($device->kategori, ['Router', 'HTB']) && $device->ip_address)
+                                    <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ $device->ip_address }}</span>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-slate-900 dark:text-white">{{ $device->rasio ?: '-' }}</div>
+                            @if($device->out_details && count($device->out_details) > 0)
+                            <div class="text-xs text-slate-500 mt-1 space-y-0.5">
+                                @foreach($device->out_details as $out)
+                                    <div><i class="fas fa-level-up-alt fa-rotate-90 text-[10px] text-indigo-400 mr-1"></i> {{ $out['out'] }} {{ $out['ket'] ? '('.$out['ket'].')' : '' }}</div>
+                                @endforeach
+                            </div>
+                            @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-slate-900 dark:text-white">{{ $device->redaman ? $device->redaman . ' dB' : '-' }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if(in_array($device->kategori, ['Router', 'HTB']))
-                                <div class="text-sm text-slate-900 dark:text-white font-mono">{{ $device->ip_address ?: '-' }}</div>
-                            @else
-                                <div class="text-sm text-slate-400 dark:text-slate-500">-</div>
-                            @endif
                         </td>
                         <td class="px-6 py-4">
                             <div class="text-sm text-slate-900 dark:text-white">{{ $device->keterangan ?: '-' }}</div>
@@ -171,7 +172,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                        <td colspan="7" class="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                             <div class="flex flex-col items-center justify-center">
                                 <i class="fas fa-microchip text-4xl mb-3 text-slate-300 dark:text-slate-600"></i>
                                 <p>Belum ada data perangkat.</p>
@@ -244,8 +245,8 @@
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label for="rasio" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Splitter</label>
-                                <input type="text" name="rasio" id="rasio" placeholder="Contoh: 1:8"
+                                <label for="rasio" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Splitter (In)</label>
+                                <input type="text" name="rasio" id="rasio" placeholder="In"
                                     class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white transition-colors">
                             </div>
                             <div>
@@ -254,6 +255,24 @@
                                     class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white transition-colors">
                             </div>
                         </div>
+
+                        <div>
+                            <label class="flex items-center space-x-2 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="enable_out" name="enable_out" value="1" class="rounded border-slate-300 text-[#352f99] shadow-sm focus:border-[#352f99] focus:ring focus:ring-[#352f99] focus:ring-opacity-50" onchange="toggleOutDetails()">
+                                <span>Out</span>
+                            </label>
+                            
+                            <div id="out_details_container" class="hidden mt-3 space-y-3">
+                                <div class="flex items-center space-x-2 out-item">
+                                    <input type="text" name="out_details[out][]" placeholder="Out" class="block w-1/3 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                                    <input type="text" name="out_details[ket][]" placeholder="Ket" class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                                    <button type="button" onclick="addOutItem()" class="px-3 py-2 bg-[#352f99] text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
 
                         <div>
                             <label for="foto" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Foto Perangkat (.png/.jpg, Max 500Kb)</label>
@@ -270,17 +289,17 @@
 
                     <!-- Column 2: Lokasi -->
                     <div class="space-y-4">
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Lokasi Perangkat</label>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Lokasi Perangkat<span class="text-red-500">*</span></label>
                         <div id="deviceMap" class="h-64 w-full rounded-lg border border-slate-300 dark:border-slate-600 mb-2 z-10"></div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label for="latitude" class="block text-xs font-medium text-slate-500 dark:text-slate-400">Latitude</label>
-                                <input type="text" name="latitude" id="latitude" readonly
+                                <label for="latitude" class="block text-xs font-medium text-slate-500 dark:text-slate-400">Latitude<span class="text-red-500">*</span></label>
+                                <input type="text" name="latitude" id="latitude" readonly required
                                     class="block w-full mt-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded shadow-sm sm:text-xs dark:text-white">
                             </div>
                             <div>
-                                <label for="longitude" class="block text-xs font-medium text-slate-500 dark:text-slate-400">Longitude</label>
-                                <input type="text" name="longitude" id="longitude" readonly
+                                <label for="longitude" class="block text-xs font-medium text-slate-500 dark:text-slate-400">Longitude<span class="text-red-500">*</span></label>
+                                <input type="text" name="longitude" id="longitude" readonly required
                                     class="block w-full mt-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-600 rounded shadow-sm sm:text-xs dark:text-white">
                             </div>
                         </div>
@@ -318,8 +337,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     var map, marker;
-    var defaultLat = -6.200000;
-    var defaultLng = 106.816666;
+    var defaultLat = -8.24759273495716;
+    var defaultLng = 111.3806015253067;
 
     $(document).ready(function() {
         $('#devicesTable').DataTable({
@@ -414,11 +433,63 @@
                 initLat = parseFloat(device.latitude);
                 initLng = parseFloat(device.longitude);
             }
+
+            // Handle Out details
+            const outContainer = document.getElementById('out_details_container');
+            const enableOutCb = document.getElementById('enable_out');
+            outContainer.innerHTML = ''; // Clear existing
+            
+            if (device.out_details && Array.isArray(device.out_details) && device.out_details.length > 0) {
+                enableOutCb.checked = true;
+                outContainer.classList.remove('hidden');
+                
+                device.out_details.forEach((item, index) => {
+                    const isFirst = index === 0;
+                    const buttonHtml = isFirst 
+                        ? `<button type="button" onclick="addOutItem()" class="px-3 py-2 bg-[#352f99] text-white rounded-lg hover:bg-indigo-700 transition-colors"><i class="fas fa-plus"></i></button>`
+                        : `<button type="button" onclick="removeOutItem(this)" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"><i class="fas fa-trash"></i></button>`;
+                        
+                    const rowHtml = `
+                        <div class="flex items-center space-x-2 out-item">
+                            <input type="text" name="out_details[out][]" value="${item.out || ''}" placeholder="Out" class="block w-1/3 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                            <input type="text" name="out_details[ket][]" value="${item.ket || ''}" placeholder="Ket" class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                            ${buttonHtml}
+                        </div>
+                    `;
+                    outContainer.insertAdjacentHTML('beforeend', rowHtml);
+                });
+            } else {
+                enableOutCb.checked = false;
+                outContainer.classList.add('hidden');
+                outContainer.innerHTML = `
+                    <div class="flex items-center space-x-2 out-item">
+                        <input type="text" name="out_details[out][]" placeholder="Out" class="block w-1/3 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                        <input type="text" name="out_details[ket][]" placeholder="Ket" class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                        <button type="button" onclick="addOutItem()" class="px-3 py-2 bg-[#352f99] text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                `;
+            }
         } else {
             modalTitle.innerText = 'Tambah Data Perangkat';
             form.action = "{{ route('devices.store') }}";
             methodInput.value = 'POST';
             form.reset();
+            
+            // Reset Out details
+            document.getElementById('enable_out').checked = false;
+            const outContainer = document.getElementById('out_details_container');
+            outContainer.classList.add('hidden');
+            outContainer.innerHTML = `
+                <div class="flex items-center space-x-2 out-item">
+                    <input type="text" name="out_details[out][]" placeholder="Out" class="block w-1/3 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                    <input type="text" name="out_details[ket][]" placeholder="Ket" class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                    <button type="button" onclick="addOutItem()" class="px-3 py-2 bg-[#352f99] text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            `;
         }
         
         document.getElementById('deviceModal').classList.remove('hidden');
@@ -447,6 +518,34 @@
             document.getElementById('customer_id').value = '';
             document.getElementById('ip_address').value = '';
         }
+    }
+
+    function toggleOutDetails() {
+        const outContainer = document.getElementById('out_details_container');
+        const enableOutCb = document.getElementById('enable_out');
+        if (enableOutCb.checked) {
+            outContainer.classList.remove('hidden');
+        } else {
+            outContainer.classList.add('hidden');
+        }
+    }
+
+    function addOutItem() {
+        const outContainer = document.getElementById('out_details_container');
+        const rowHtml = `
+            <div class="flex items-center space-x-2 out-item mt-3">
+                <input type="text" name="out_details[out][]" placeholder="Out" class="block w-1/3 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                <input type="text" name="out_details[ket][]" placeholder="Ket" class="block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm focus:ring-[#352f99] focus:border-[#352f99] sm:text-sm dark:bg-slate-900 dark:text-white">
+                <button type="button" onclick="removeOutItem(this)" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        outContainer.insertAdjacentHTML('beforeend', rowHtml);
+    }
+
+    function removeOutItem(button) {
+        button.closest('.out-item').remove();
     }
 
     function fetchCustomerIp() {

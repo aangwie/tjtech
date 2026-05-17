@@ -45,11 +45,28 @@ class DeviceController extends Controller
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:500' // max 500kb
         ]);
 
-        $data = $request->except('foto');
+        $data = $request->except('foto', 'out_details', 'enable_out');
 
         if ($request->hasFile('foto')) {
             $data['foto'] = $this->handlePhotoUpload($request->file('foto'));
         }
+
+        // Handle out details
+        $outDetails = [];
+        if ($request->has('enable_out') && $request->has('out_details')) {
+            $outs = $request->input('out_details.out', []);
+            $kets = $request->input('out_details.ket', []);
+            
+            foreach ($outs as $index => $outVal) {
+                if (!empty($outVal) || !empty($kets[$index])) {
+                    $outDetails[] = [
+                        'out' => $outVal,
+                        'ket' => $kets[$index] ?? ''
+                    ];
+                }
+            }
+        }
+        $data['out_details'] = !empty($outDetails) ? $outDetails : null;
 
         Device::create($data);
 
@@ -90,11 +107,28 @@ class DeviceController extends Controller
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:500'
         ]);
 
-        $data = $request->except('foto');
+        $data = $request->except('foto', 'out_details', 'enable_out');
 
         if ($request->hasFile('foto')) {
             $data['foto'] = $this->handlePhotoUpload($request->file('foto'), $device->foto);
         }
+
+        // Handle out details
+        $outDetails = [];
+        if ($request->has('enable_out') && $request->has('out_details')) {
+            $outs = $request->input('out_details.out', []);
+            $kets = $request->input('out_details.ket', []);
+            
+            foreach ($outs as $index => $outVal) {
+                if (!empty($outVal) || !empty($kets[$index])) {
+                    $outDetails[] = [
+                        'out' => $outVal,
+                        'ket' => $kets[$index] ?? ''
+                    ];
+                }
+            }
+        }
+        $data['out_details'] = !empty($outDetails) ? $outDetails : null;
 
         $device->update($data);
 

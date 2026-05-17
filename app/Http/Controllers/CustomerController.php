@@ -515,10 +515,15 @@ class CustomerController extends Controller
             return $pdf->stream('Semua-Kartu-Router.pdf');
         } elseif ($request->type == 'jpg') {
             $data['customers_json'] = $customers->map(function($c) {
+                $qr_url = route('frontend.check', ['token' => encrypt($c->internet_number)]);
+                $qr_svg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(120)->margin(0)->generate($qr_url);
+                $qr_base64 = 'data:image/svg+xml;base64,' . base64_encode($qr_svg);
+
                 return [
                     'inet' => $c->internet_number,
                     'name' => strtoupper($c->name ?? ''),
-                    'filename' => preg_replace('/[^A-Za-z0-9\-]/', '_', $c->name ?? 'Unknown')
+                    'filename' => preg_replace('/[^A-Za-z0-9\-]/', '_', $c->name ?? 'Unknown'),
+                    'qr_base64' => $qr_base64
                 ];
             });
             return view('customers.print-all-jpg', $data);
