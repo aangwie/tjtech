@@ -291,6 +291,25 @@
                     <td style="text-align: right; font-weight: bold; font-size: 14px;">
                         @php
                             $displayPrice = $invoice->price > 0 ? $invoice->price : ($invoice->customer->monthly_price ?? 0);
+                            $remaining = max(0, $displayPrice - $invoice->amount_paid);
+
+                            $previousInvoices = \App\Models\Invoice::where('customer_id', $invoice->customer_id)
+                                ->where('id', '!=', $invoice->id)
+                                ->where('due_date', '<', $invoice->due_date)
+                                ->whereIn('status', ['unpaid', 'carried'])
+                                ->orderBy('due_date', 'asc')
+                                ->get();
+                            $arrearsList = [];
+                            foreach ($previousInvoices as $prevInv) {
+                                $prevPrice = $prevInv->price > 0 ? $prevInv->price : ($invoice->customer->monthly_price ?? 0);
+                                $prevOutstanding = $prevPrice - (float) $prevInv->amount_paid;
+                                if ($prevOutstanding > 0) {
+                                    $arrearsList[] = [
+                                        'period' => \Carbon\Carbon::parse($prevInv->due_date)->isoFormat('MMMM Y'),
+                                        'amount' => $prevOutstanding
+                                    ];
+                                }
+                            }
                         @endphp
                         Rp {{ number_format($displayPrice, 0, ',', '.') }}
                     </td>
@@ -299,12 +318,32 @@
         </table>
 
         <!-- Summary -->
-        <table class="total-row">
+        <table style="width: 100%; margin-top: 10px;">
+            @if((float) $invoice->amount_paid > 0)
             <tr>
-                <td style="width: 70%;" class="total-label">Total Tagihan</td>
-                <td class="total-amount">Rp {{ number_format($displayPrice, 0, ',', '.') }}</td>
+                <td style="width: 70%; padding: 8px 12px; text-align: right; font-size: 13px; color: #888;">Sudah Dibayar</td>
+                <td style="padding: 8px 12px; text-align: right; font-size: 14px; font-weight: bold; color: #15803d;">- Rp {{ number_format($invoice->amount_paid, 0, ',', '.') }}</td>
+            </tr>
+            @endif
+            <tr>
+                <td style="width: 70%; padding: 8px 12px; text-align: right; font-size: 14px; font-weight: bold; color: #888; border-top: 1px solid #eee;">Sisa Pembayaran</td>
+                <td style="padding: 8px 12px; text-align: right; font-size: 22px; font-weight: bold; color: #4f46e5; border-top: 1px solid #eee;">Rp {{ number_format($remaining, 0, ',', '.') }}</td>
             </tr>
         </table>
+
+        @if(count($arrearsList) > 0)
+        <div style="margin-top: 30px; padding: 15px; background-color: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px;">
+            <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 13px; color: #9a3412;">Informasi Tunggakan Bulan Sebelumnya:</p>
+            <table style="width: 100%; font-size: 13px; color: #c2410c;">
+                @foreach($arrearsList as $arr)
+                <tr>
+                    <td style="padding: 3px 0;">- Tagihan Bulan {{ $arr['period'] }}</td>
+                    <td style="padding: 3px 0; text-align: right; font-weight: bold;">Rp {{ number_format($arr['amount'], 0, ',', '.') }}</td>
+                </tr>
+                @endforeach
+            </table>
+        </div>
+        @endif
 
         <!-- Footer -->
         <table class="footer">
