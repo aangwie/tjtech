@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RouterSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 use App\Models\Plan;
 
@@ -74,6 +75,11 @@ class RouterSettingController extends Controller
         if ($request->id) {
             $router = RouterSetting::find($request->id);
             $router->update($data);
+
+            // Bust cache
+            Cache::forget('mikrotik_status_' . $router->id);
+            Cache::forget('mikrotik_profiles_' . $router->id);
+
             $msg = 'Konfigurasi berhasil diperbarui.';
         } else {
             // Jika ini router pertama, langsung set aktif
@@ -98,6 +104,10 @@ class RouterSettingController extends Controller
         $router = RouterSetting::find($id);
         $router->update(['is_active' => true]);
 
+        // Bust cache for the newly activated router to force a fresh connection attempt
+        Cache::forget('mikrotik_status_' . $id);
+        Cache::forget('mikrotik_profiles_' . $id);
+
         return back()->with('success', "Berhasil beralih ke router: {$router->label} ({$router->host})");
     }
 
@@ -109,6 +119,10 @@ class RouterSettingController extends Controller
         if ($router->is_active) {
             return back()->with('error', 'Tidak bisa menghapus router yang sedang digunakan (Aktif). Pindahkan koneksi dulu.');
         }
+
+        // Bust cache
+        Cache::forget('mikrotik_status_' . $id);
+        Cache::forget('mikrotik_profiles_' . $id);
 
         $router->delete();
         return back()->with('success', 'Data konfigurasi router dihapus.');

@@ -485,6 +485,9 @@
                     .catch(error => console.error('Error fetching system stats:', error));
             }
 
+            // Run immediately on page load to fetch stats asynchronously
+            updateSystemStats();
+
             // Poll every 5 seconds
             setInterval(updateSystemStats, 5000);
 
