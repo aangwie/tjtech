@@ -51,19 +51,17 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <form action="{{ route('system.update') }}" method="POST"
-                        onsubmit="return confirm('Yakin ingin melakukan update? Pastikan tidak ada file yang diedit manual di hosting.');">
+                    <form id="updateForm" action="{{ route('system.update') }}" method="POST">
                         @csrf
-                        <button type="submit"
+                        <button type="button" onclick="confirmUpdateSystem()"
                             class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-primary-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary-600/30 hover:bg-primary-500 hover:shadow-primary-600/40 transition-all transform hover:-translate-y-0.5">
                             <i class="fas fa-cloud-download-alt mr-2"></i> Cek & Update Sistem
                         </button>
                     </form>
 
-                    <form action="{{ route('system.migrate') }}" method="POST"
-                        onsubmit="return confirm('Yakin ingin menjalankan migrasi database secara manual?');">
+                    <form id="migrateForm" action="{{ route('system.migrate') }}" method="POST">
                         @csrf
-                        <button type="submit"
+                        <button type="button" onclick="confirmRunMigration()"
                             class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-slate-700 transition-all transform hover:-translate-y-0.5">
                             <i class="fas fa-database mr-2 text-indigo-400"></i> Run Migration
                         </button>
@@ -111,13 +109,12 @@
                         <h4 class="text-sm font-semibold text-slate-700 flex items-center">
                             <i class="fas fa-upload mr-2 text-amber-500"></i> Restore Database
                         </h4>
-                        <form action="{{ route('system.restore') }}" method="POST" enctype="multipart/form-data"
-                            onsubmit="return confirm('PERINGATAN: Restore akan menghapus data yang ada dan menggantinya dengan isi file backup. Lanjutkan?');">
+                        <form id="restoreForm" action="{{ route('system.restore') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <div class="space-y-3">
                                 <input type="file" name="backup_file" required accept=".sql"
                                     class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all">
-                                <button type="submit"
+                                <button type="button" onclick="confirmRestoreDatabase()"
                                     class="inline-flex items-center justify-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-amber-400 transition-all">
                                     <i class="fas fa-file-import mr-2"></i> Upload & Restore
                                 </button>
@@ -180,4 +177,100 @@
             bg: #475569;
         }
     </style>
+@endpush
+
+@push('scripts')
+    <script>
+        function confirmUpdateSystem() {
+            Swal.fire({
+                title: 'Update Sistem?',
+                text: 'Pastikan Anda telah membackup database dan file konfigurasi sebelum melanjutkan. File yang diedit manual di hosting mungkin akan tertimpa.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fas fa-cloud-download-alt mr-2"></i> Ya, Update Sekarang',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses Update...',
+                        text: 'Harap tunggu, sistem sedang melakukan pull data, migrasi database, dan membersihkan cache.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    document.getElementById('updateForm').submit();
+                }
+            });
+        }
+
+        function confirmRunMigration() {
+            Swal.fire({
+                title: 'Jalankan Migrasi?',
+                text: 'Apakah Anda yakin ingin menjalankan migrasi database secara manual?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#fbbf24',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fas fa-database mr-2"></i> Ya, Jalankan',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Menjalankan Migrasi...',
+                        text: 'Harap tunggu, proses migrasi sedang berjalan.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    document.getElementById('migrateForm').submit();
+                }
+            });
+        }
+
+        function confirmRestoreDatabase() {
+            const fileInput = document.querySelector('input[name="backup_file"]');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                Swal.fire({
+                    title: 'File Belum Dipilih',
+                    text: 'Silakan pilih file backup (.sql) terlebih dahulu.',
+                    icon: 'warning',
+                    confirmButtonColor: '#4f46e5'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Peringatan Restore!',
+                text: 'Proses restore akan menghapus seluruh data saat ini dan menggantinya dengan isi file backup. Tindakan ini tidak dapat dibatalkan! Lanjutkan?',
+                icon: 'error',
+                showCancelButton: true,
+                confirmButtonColor: '#f43f5e',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fas fa-file-import mr-2"></i> Ya, Restore Sekarang',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Mengembalikan Database...',
+                        text: 'Harap tunggu, database sedang di-restore.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    document.getElementById('restoreForm').submit();
+                }
+            });
+        }
+    </script>
 @endpush
