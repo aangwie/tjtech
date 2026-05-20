@@ -67,18 +67,14 @@ class DashboardController extends Controller
         $myCustomerUsernames = (clone $customerQuery)->pluck('pppoe_username')->filter()->toArray();
 
         if ($isConnected) {
-            $secrets = $this->mikrotik->getSecrets();
             $actives = $this->mikrotik->getActiveUsers();
 
-            // Filter Mikrotik data to only show what belongs to this login ID
-            $mySecrets = array_filter($secrets, function ($s) use ($myCustomerUsernames) {
-                return is_array($s) && isset($s['name']) && in_array($s['name'], $myCustomerUsernames);
-            });
+            // Filter Mikrotik data to only show active sessions belonging to this user
             $myActives = array_filter($actives, function ($a) use ($myCustomerUsernames) {
                 return is_array($a) && isset($a['name']) && in_array($a['name'], $myCustomerUsernames);
             });
 
-            $totalCustomers = count($mySecrets);
+            $totalCustomers = (clone $customerQuery)->count();
             $activeCustomers = count($myActives);
             $disabledCustomers = $totalCustomers - $activeCustomers;
         } else {
