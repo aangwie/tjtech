@@ -268,6 +268,7 @@ class CustomerController extends Controller
             } while (Customer::where('internet_number', $randomInet)->exists());
 
             Customer::create([
+                'admin_id' => $admin->id, // <-- Explicitly set resolved admin ID
                 'internet_number' => $randomInet, // <-- Pakai angka acak 8 digit
                 'name' => $secret['comment'] ?? $secret['name'],
                 'pppoe_username' => $secret['name'],

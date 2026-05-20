@@ -883,8 +883,10 @@
                 url: "{{ route('sync.process') }}", type: "POST",
                 data: { _token: $('meta[name="csrf-token"]').attr('content'), secret: item },
                 success: function (res) {
-                    let badge = res.status === 'created' ? '<span class="text-green-600 font-bold">[NEW]</span>' : '<span class="text-blue-600 font-bold">[UPD]</span>';
-                    $(`#syncLog`).prepend(`<li>` + badge + ` ` + res.name + `</li>`);
+                    let badge = res.status === 'created' 
+                        ? '<span class="inline-flex items-center rounded-md bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/20 mr-1.5">[DATA BARU]</span>' 
+                        : '<span class="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-400 ring-1 ring-inset ring-blue-600/20 mr-1.5">[DATA LAMA]</span>';
+                    $(`#syncLog`).prepend(`<li class="flex items-center py-1">` + badge + `<span class="text-slate-700 dark:text-slate-300">` + res.name + `</span></li>`);
                     processQueue(secrets, total, index + 1);
                 },
                 error: function (xhr) {
