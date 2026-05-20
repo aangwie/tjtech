@@ -897,12 +897,16 @@
                 },
                 error: function (xhr) {
                     let res = xhr.responseJSON;
+                    let errorMsg = (res && res.message) ? res.message : "Error " + xhr.status;
                     if (res && res.stop) {
-                        $(`#syncLog`).prepend(`<li class="text-rose-600 font-bold">[STOP] ` + res.message + `</li>`);
-                        $(`#syncStatusText`).text(`Sinkronisasi Terhenti: ` + res.message).addClass(`text-rose-600`);
+                        $(`#syncLog`).prepend(`<li class="text-rose-600 font-bold">[STOP] ` + errorMsg + `</li>`);
+                        $(`#syncStatusText`).text(`Sinkronisasi Terhenti: ` + errorMsg).addClass(`text-rose-600`);
                         $(`#syncDone`).show();
                         return;
                     }
+                    // Log the failure to the user clearly
+                    let badge = '<span class="inline-flex items-center rounded-md bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 text-xs font-bold text-rose-700 dark:text-rose-400 ring-1 ring-inset ring-rose-600/20 mr-1.5">[GAGAL]</span>';
+                    $(`#syncLog`).prepend(`<li class="flex items-center py-1">` + badge + `<span class="text-rose-600 font-semibold mr-1.5">` + item.name + `</span><span class="text-xs text-slate-500">(` + errorMsg + `)</span></li>`);
                     processQueue(secrets, total, index + 1, adminId);
                 }
             });

@@ -250,13 +250,18 @@ class CustomerController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Admin pemilik router tidak ditemukan.'], 404);
         }
 
-        $customer = Customer::where('admin_id', $admin->id)->where('pppoe_username', $secret['name'])->first();
+        $customer = Customer::withoutGlobalScopes()
+            ->where('pppoe_username', $secret['name'])
+            ->first();
 
         // Check Plan Limit (Total Pelanggan)
+        // Hanya cek limit jika pelanggan baru atau akan dipindahkan kepemilikannya ke admin ini
+        $isNewForThisAdmin = !$customer || ($customer->admin_id !== $admin->id);
+
         if (!$admin->isSuperAdmin()) {
             $plan = $admin->plan;
 
-            if ($plan && $plan->max_customers > 0 && !$customer) {
+            if ($plan && $plan->max_customers > 0 && $isNewForThisAdmin) {
                 $currentCount = Customer::where('admin_id', $admin->id)->count();
                 if ($currentCount >= $plan->max_customers) {
                     return response()->json([
@@ -269,8 +274,9 @@ class CustomerController extends Controller
         }
 
         if ($customer) {
-            // Logic Update (Sama seperti sebelumnya)
+            // Logic Update (Sama seperti sebelumnya, tapi pastikan admin_id disesuaikan ke pemilik router yang benar)
             $customer->update([
+                'admin_id' => $admin->id,
                 'pppoe_password' => $secret['password'] ?? '',
                 'profile' => $secret['profile'] ?? 'default',
             ]);
@@ -278,10 +284,10 @@ class CustomerController extends Controller
         } else {
             // Logic Insert Baru (DIPERBARUI)
 
-            // Generate 8 Digit Angka Acak untuk Nomor Internet
+            // Generate 8 Digit Angka Acak untuk Nomor Internet (cek keunikan secara global)
             do {
                 $randomInet = rand(10000000, 99999999);
-            } while (Customer::where('internet_number', $randomInet)->exists());
+            } while (Customer::withoutGlobalScopes()->where('internet_number', $randomInet)->exists());
 
             Customer::create([
                 'admin_id' => $admin->id, // <-- Explicitly set resolved admin ID (owner of the router)
