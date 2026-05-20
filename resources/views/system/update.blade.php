@@ -36,7 +36,7 @@
                                 class="block text-sm font-bold text-slate-900 dark:text-white mb-1">GitHub Personal
                                 Access Token</label>
                             <div class="relative rounded-md shadow-sm">
-                                <input type="password" name="github_token" id="github_token"
+                                <input type="text" name="github_token" id="github_token"
                                     class="block w-full rounded-md border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-slate-900 dark:bg-slate-900 dark:border-slate-600 dark:text-white dark:placeholder-slate-400"
                                     placeholder="github_pat_..." value="{{ $setting->github_token ?? '' }}">
                             </div>
