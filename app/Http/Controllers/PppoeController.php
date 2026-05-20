@@ -82,15 +82,13 @@ class PppoeController extends Controller
 
             $myCustomerUsernames = (clone $customerQuery)->pluck('pppoe_username')->filter()->toArray();
 
-            // Filter secrets & actives if not superadmin
-            if (!$user->isSuperAdmin()) {
-                $secrets = array_values(array_filter($secrets, function ($s) use ($myCustomerUsernames) {
-                    return is_array($s) && isset($s['name']) && in_array($s['name'], $myCustomerUsernames);
-                }));
-                $activeUsers = array_values(array_filter($activeUsers, function ($a) use ($myCustomerUsernames) {
-                    return is_array($a) && isset($a['name']) && in_array($a['name'], $myCustomerUsernames);
-                }));
-            }
+            // Filter secrets & actives to only show users present in local DB (MySQL)
+            $secrets = array_values(array_filter($secrets, function ($s) use ($myCustomerUsernames) {
+                return is_array($s) && isset($s['name']) && in_array($s['name'], $myCustomerUsernames);
+            }));
+            $activeUsers = array_values(array_filter($activeUsers, function ($a) use ($myCustomerUsernames) {
+                return is_array($a) && isset($a['name']) && in_array($a['name'], $myCustomerUsernames);
+            }));
 
             // Mapping data active user
             $activeCollection = collect($activeUsers)->keyBy('name');
