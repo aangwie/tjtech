@@ -137,7 +137,7 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 align-middle">
-                                    <div class="font-medium text-slate-900 dark:text-white">{{ $c->name }}</div>
+                                    <div class="font-medium {{ $c->is_active ? 'text-slate-900 dark:text-white' : 'text-red-600 dark:text-red-400' }}">{{ $c->name }}</div>
                                     <div class="text-xs text-slate-500 dark:text-slate-400 flex flex-col gap-0.5">
                                         <div class="flex items-center gap-1">
                                             <i class="fas fa-user-circle"></i> {{ $c->pppoe_username }}
@@ -185,6 +185,12 @@
                                 <td class="px-4 py-3 align-middle text-right">
                                     <div class="flex justify-end gap-2">
                                         <button type="button"
+                                            onclick="choosePrintFormat({{ $c->id }})"
+                                            class="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                                            title="Cetak Kartu Router">
+                                            <i class="fas fa-print"></i>
+                                        </button>
+                                        <button type="button"
                                             onclick="openTopUpSwal({{ $c->id }}, '{{ addslashes($c->name) }}', {{ (float)$c->balance }})"
                                             class="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-md transition-colors"
                                             title="Top Up Saldo">
@@ -197,7 +203,7 @@
                                             data-price="{{ $c->monthly_price }}" data-operator="{{ $c->operator_id }}"
                                             data-address="{{ $c->address }}" data-lat="{{ $c->latitude }}"
                                             data-lng="{{ $c->longitude }}" data-profile="{{ $c->profile }}"
-                                            data-notes="{{ $c->notes }}">
+                                            data-notes="{{ $c->notes }}" data-active="{{ $c->is_active ? '1' : '0' }}">
                                             <i class="fas fa-pencil-alt"></i>
                                         </button>
                                         <button type="button" onclick="confirmDelete('{{ $c->id }}', '{{ $c->name }}')"
@@ -456,6 +462,18 @@
                                             <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Perubahan profile
                                                 akan langsung
                                                 diterapkan ke Router Mikrotik.</p>
+                                        </div>
+                                        <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                            <div>
+                                                <label class="block text-sm font-bold text-slate-900 dark:text-white">Status Aktif</label>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400">Jika diaktifkan, koneksi PPPoE akan diaktifkan di Mikrotik.</p>
+                                            </div>
+                                            <div>
+                                                <label class="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" name="is_active" id="editIsActive" value="1" class="sr-only peer">
+                                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary-600"></div>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                     <!-- Col 2 -->
@@ -771,7 +789,14 @@
         var defaultLat = -6.200000, defaultLng = 106.816666;
 
         $(document).ready(function () {
-            $('#tableCust').DataTable({ responsive: true });
+            var dt = $('#tableCust').DataTable({ responsive: true });
+
+            // Menambahkan tombol cetak semua di sebelah kotak search (bisa untuk versi dt-search atau dataTables_filter)
+            $('.dt-search, .dataTables_filter').prepend(`
+                <button type="button" onclick="choosePrintAllFormat()" class="mr-4 inline-flex items-center rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-900/50 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 shadow-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all">
+                    <i class="fas fa-print mr-2"></i> Cetak Semua Kartu
+                </button>
+            `);
 
             // Logic Open Modal Edit via jQuery -> Alpine
             $('#tableCust').on('click', '.btn-edit', function () {
@@ -791,6 +816,7 @@
                 $('#editNotes').val($(this).data('notes'));
                 $('#editLat').val(rawLat);
                 $('#editLng').val(rawLng);
+                $('#editIsActive').prop('checked', $(this).data('active') == 1);
                 $('#formEdit').attr('action', '/customers/' + id);
 
                 // Trigger Alpine Modal
@@ -1141,6 +1167,51 @@
                     });
                 }
             });
+        }
+
+        function choosePrintFormat(id) {
+            Swal.fire({
+                title: 'Pilih Format Cetak',
+                text: 'Kartu Informasi Router',
+                icon: 'question',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-file-pdf mr-1"></i> Cetak PDF',
+                denyButtonText: '<i class="fas fa-image mr-1"></i> Cetak JPG',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#352f99',
+                denyButtonColor: '#10b981',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.open(`/customers/${id}/print-card?type=pdf`, '_blank');
+                } else if (result.isDenied) {
+                    window.open(`/customers/${id}/print-card?type=jpg`, '_blank');
+                }
+            })
+        }
+
+        function choosePrintAllFormat() {
+            Swal.fire({
+                title: 'Cetak Semua Kartu',
+                text: 'Pilih format keluaran untuk mencetak seluruh pelanggan.',
+                icon: 'question',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-file-pdf mr-1"></i> PDF (Folio)',
+                denyButtonText: '<i class="fas fa-file-archive mr-1"></i> JPG (.zip)',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#352f99',
+                denyButtonColor: '#10b981',
+            }).then((result) => {
+                let adminId = $('select[name="admin_id"]').val() || '';
+                let queryStr = adminId ? `?admin_id=${adminId}&` : '?';
+                
+                if (result.isConfirmed) {
+                    window.open(`/customers/print-all-card${queryStr}type=pdf`, '_blank');
+                } else if (result.isDenied) {
+                    window.open(`/customers/print-all-card${queryStr}type=jpg`, '_blank');
+                }
+            })
         }
     </script>
 @endpush

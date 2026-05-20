@@ -24,8 +24,11 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SiteSettingController;
 use App\Http\Controllers\ControlController;
 use App\Http\Controllers\DashboardController;
-
-
+use App\Http\Controllers\AssetController;
+use App\Http\Controllers\AssetDisposalController;
+use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\DeviceRelationController;
+use App\Http\Controllers\DeviceMapController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,7 +41,7 @@ Route::get('/', [FrontendController::class, 'index'])->name('frontend.index');
 Route::get('/paket', [FrontendController::class, 'pricing'])->name('frontend.pricing');
 Route::get('/tentang-kami', [FrontendController::class, 'about'])->name('frontend.about');
 Route::get('/syarat-ketentuan', [FrontendController::class, 'terms'])->name('frontend.terms');
-Route::post('/check-bill', [FrontendController::class, 'check'])->name('frontend.check');
+Route::match(['get', 'post'], '/check-bill', [FrontendController::class, 'check'])->name('frontend.check');
 Route::get('/invoice/{id}/download', [FrontendController::class, 'downloadInvoice'])->name('frontend.invoice');
 
 // Login, Register & Reset Password
@@ -92,8 +95,6 @@ Route::middleware(['auth'])->group(function () {
     //Route Maps Pelanggan
     Route::get('/maps', [App\Http\Controllers\MapController::class, 'index'])->name('maps.index');
 
-    // ... (SISA SEMUA ROUTE LAMA ANDA : BILLING, ADMIN, OPERATOR TETAP DISINI) ...
-
     // Billing
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
 
@@ -107,6 +108,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/billing/{id}/pay-ajax', [BillingController::class, 'processPaymentAjax'])->name('billing.payAjax');
     Route::post('/billing/{id}/pay-method', [BillingController::class, 'payWithMethod'])->name('billing.payMethod');
     Route::get('/billing/{id}/info', [BillingController::class, 'getInvoiceInfo'])->name('billing.info');
+    Route::get('/billing/{id}/payments', [BillingController::class, 'getPaymentDetails'])->name('billing.payments');
+    Route::post('/billing/payment/{paymentId}/cancel', [BillingController::class, 'cancelSinglePayment'])->name('billing.cancelSinglePayment');
 
     Route::post('/billing/{id}/cancel', [BillingController::class, 'cancelPayment'])->name('billing.cancel');
     Route::post('/billing/store', [BillingController::class, 'store'])->name('billing.store');
@@ -169,6 +172,32 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/accounting/expense', [AccountingController::class, 'storeExpense'])->name('accounting.store');
         Route::delete('/accounting/expense/{id}', [AccountingController::class, 'destroyExpense'])->name('accounting.destroy');
         Route::get('/accounting/print', [AccountingController::class, 'print'])->name('accounting.print');
+
+        // MANAJEMEN ASET
+        Route::get('/asset', [AssetController::class, 'index'])->name('asset.index');
+        Route::post('/asset', [AssetController::class, 'store'])->name('asset.store');
+        Route::put('/asset/{id}', [AssetController::class, 'update'])->name('asset.update');
+        Route::delete('/asset/{id}', [AssetController::class, 'destroy'])->name('asset.destroy');
+        Route::get('/asset/laporan', [AssetController::class, 'report'])->name('asset.report');
+        Route::post('/asset/laporan/cetak', [AssetController::class, 'printReport'])->name('asset.print');
+        
+        Route::get('/asset/disposal', [AssetDisposalController::class, 'index'])->name('asset.disposal.index');
+        Route::post('/asset/disposal', [AssetDisposalController::class, 'store'])->name('asset.disposal.store');
+
+        // MANAJEMEN PERANGKAT
+        Route::resource('devices', DeviceController::class)->except(['create', 'show', 'edit']);
+
+        // Device Relations
+        Route::get('device-relations', [DeviceRelationController::class, 'index'])->name('device-relations.index');
+        Route::post('device-relations', [DeviceRelationController::class, 'store'])->name('device-relations.store');
+        Route::put('device-relations/{source_id}', [DeviceRelationController::class, 'update'])->name('device-relations.update');
+        Route::delete('device-relations/{source_id}', [DeviceRelationController::class, 'destroy'])->name('device-relations.destroy');
+
+        // Device Map
+        Route::get('device-map', [DeviceMapController::class, 'index'])->name('device-map.index');
+
+        // Fetch Customer IP for Devices
+        Route::get('devices/customer-ip/{id}', [DeviceController::class, 'getCustomerIp'])->name('devices.customer_ip');
 
         // TRAFFIC MONITOR
         Route::get('/traffic', [TrafficController::class, 'index'])->name('traffic.index');
@@ -244,6 +273,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/customers/{id}/topup-history', [CustomerController::class, 'getTopupHistory'])->name('customers.topupHistory');
     Route::put('/customers/topup/{topupId}', [CustomerController::class, 'updateTopup'])->name('customers.updateTopup');
     Route::delete('/customers/topup/{topupId}', [CustomerController::class, 'deleteTopup'])->name('customers.deleteTopup');
+    Route::get('/customers/print-all-card', [CustomerController::class, 'printAllCards'])->name('customers.printAllCards');
+    Route::get('/customers/{id}/print-card', [CustomerController::class, 'printCard'])->name('customers.printCard');
     Route::resource('customers', CustomerController::class);
 });
 

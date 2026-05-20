@@ -24,7 +24,7 @@ class DashboardController extends Controller
 
         // ── Base Queries with Role Filtering ──
         $customerQuery = Customer::query();
-        $invoiceQuery = Invoice::query();
+        $invoiceQuery = Invoice::with('customer');
 
         if ($user->role === 'operator') {
             $customerQuery->where('operator_id', $user->id);

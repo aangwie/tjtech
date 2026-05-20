@@ -387,6 +387,23 @@
                                 </div>
                             </div>
 
+                            {{-- Operator Filter --}}
+                            <div>
+                                <label class="block text-sm font-bold text-slate-900 mb-1">
+                                    <i class="fas fa-user-tie mr-1 text-emerald-500"></i>Filter Operator
+                                </label>
+                                <select id="unpaidOperatorFilter"
+                                    class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                    <option value="">Semua Operator</option>
+                                    @foreach($operators as $op)
+                                        <option value="{{ $op->id }}">{{ $op->name }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    <i class="fas fa-info-circle mr-1"></i>Jika dipilih, notifikasi hanya dikirim ke pelanggan operator tersebut.
+                                </p>
+                            </div>
+
                             {{-- Preview Box --}}
                             <div x-show="previewContent" x-transition>
                                 <label class="block text-xs font-bold text-indigo-600 mb-1 uppercase tracking-wider">
@@ -407,7 +424,7 @@
                                         placeholder="Halo {name}, tagihan internet Anda sebesar Rp {tagihan} belum terbayar...">Halo {name}, tagihan internet Anda sebesar Rp {tagihan} belum terbayar. Mohon segera lunasi.</textarea>
                                     <div
                                         class="absolute bottom-2 right-2 text-xs text-slate-400 bg-white px-2 rounded border border-slate-100 shadow-sm">
-                                        Gunakan {name} untuk nama, {tagihan} untuk tagihan
+                                        {name} = nama pelanggan, {tagihan} = jumlah tagihan, {operator} = nama operator
                                     </div>
                                 </div>
                             </div>
@@ -852,6 +869,33 @@
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             color: #000080 !important;
             font-weight: 600;
+        }
+
+        /* Dark mode: Select2 search input text color (maroon red) */
+        .dark .select2-container--default .select2-search--inline .select2-search__field,
+        .dark .select2-container--default .select2-search--dropdown .select2-search__field {
+            color: #ffffffff !important;
+            background-color: #1e293b !important;
+        }
+        .dark .select2-container--default .select2-selection--multiple {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+        .dark .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            color: #ffffffff !important;
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+        }
+        .dark .select2-dropdown {
+            background-color: #1e293b !important;
+            border-color: #475569 !important;
+        }
+        .dark .select2-results__option {
+            color: #e2e8f0 !important;
+        }
+        .dark .select2-results__option--highlighted {
+            background-color: #334155 !important;
+            color: #f8fafc !important;
         }
     </style>
     <script>
@@ -1313,7 +1357,8 @@
             $('#statFail').text('0');
 
             let adminId = type === 'unpaid' ? $('#unpaidAdminFilter').val() : '';
-            $.get("{{ route('whatsapp.broadcast.targets') }}", { type: type, admin_id: adminId }, function (response) {
+            let operatorId = type === 'unpaid' ? $('#unpaidOperatorFilter').val() : '';
+            $.get("{{ route('whatsapp.broadcast.targets') }}", { type: type, admin_id: adminId, operator_id: operatorId }, function (response) {
                 queue = response.targets || response;
                 total = queue.length;
                 if (total === 0) {

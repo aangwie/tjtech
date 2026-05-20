@@ -56,6 +56,9 @@ class WhatsappController extends Controller
             $admins = User::whereIn('role', ['admin', 'superadmin'])->get(['id', 'name', 'role']);
         }
 
+        // Fetch operators for the unpaid tab filter
+        $operators = User::where('role', 'operator')->orderBy('name', 'asc')->get(['id', 'name']);
+
         // Fetch scheduled messages (history & queue)
         $scheduledMessages = ScheduledMessage::orderBy('created_at', 'desc')
             ->limit(50)
@@ -68,7 +71,7 @@ class WhatsappController extends Controller
             $billTemplates = WaBillTemplate::where('admin_id', $user->id)->orderBy('name', 'asc')->get();
         }
 
-        return view('whatsapp.index', compact('setting', 'customers', 'globalAdsense', 'scheduledMessages', 'admins', 'selectedAdminId', 'billTemplates'));
+        return view('whatsapp.index', compact('setting', 'customers', 'globalAdsense', 'scheduledMessages', 'admins', 'selectedAdminId', 'billTemplates', 'operators'));
     }
 
     // Simpan Konfigurasi
@@ -226,6 +229,16 @@ class WhatsappController extends Controller
         $msg = str_replace('{name}', $customer->name, $request->message);
         $msg = str_replace('{tagihan}', number_format($customer->monthly_price, 0, ',', '.'), $msg);
 
+        // Replace {operator} with the operator name assigned to this customer
+        if (strpos($msg, '{operator}') !== false) {
+            $operatorName = '-';
+            if ($customer->operator_id) {
+                $operator = User::find($customer->operator_id);
+                $operatorName = $operator ? $operator->name : '-';
+            }
+            $msg = str_replace('{operator}', $operatorName, $msg);
+        }
+
         // Kirim WA
         try {
             $result = $this->waService->send($customer->phone, $msg);
@@ -259,6 +272,7 @@ class WhatsappController extends Controller
         $customerIds = $request->customer_ids; // Array of customer IDs for custom selection
         $whatsappAge = $request->whatsapp_age ?? '12+';
         $adminId = $request->admin_id;
+        $operatorId = $request->operator_id;
         $user = auth()->user();
 
         // Get max recipients based on WhatsApp age
@@ -271,6 +285,11 @@ class WhatsappController extends Controller
             $query->where('admin_id', $adminId);
         }
 
+        // Filter by operator if specified
+        if ($operatorId) {
+            $query->where('operator_id', $operatorId);
+        }
+
         if ($type == 'unpaid') {
             $query->whereHas('invoices', function ($q) {
                 $q->where('status', '!=', 'paid');
@@ -280,7 +299,7 @@ class WhatsappController extends Controller
         }
 
         $targets = $query->limit($maxRecipients)
-            ->get(['id', 'name', 'phone', 'monthly_price']);
+            ->get(['id', 'name', 'phone', 'monthly_price', 'operator_id']);
 
         return response()->json([
             'targets' => $targets,

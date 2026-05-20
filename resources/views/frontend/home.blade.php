@@ -128,14 +128,71 @@
                 </div>
                 <div class="px-6 py-6">
                     <div class="text-center mb-8">
-                        <p class="text-sm text-slate-500 uppercase tracking-widest font-semibold mb-1">Total Tagihan</p>
-                        <div class="text-4xl font-extrabold text-slate-900">
-                            Rp {{ number_format($customer->monthly_price, 0, ',', '.') }}
+                        @php
+                            $displayPrice = $invoice->price > 0 ? $invoice->price : ($customer->monthly_price ?? 0);
+                            $remaining = max(0, $displayPrice - $invoice->amount_paid);
+                        @endphp
+                        <p class="text-sm text-slate-500 uppercase tracking-widest font-semibold mb-1">Sisa Pembayaran</p>
+                        <div class="text-4xl font-extrabold {{ $remaining > 0 ? 'text-red-600' : 'text-green-600' }}">
+                            Rp {{ number_format($remaining, 0, ',', '.') }}
                         </div>
                         <div class="mt-2 inline-block px-3 py-1 bg-slate-100 rounded text-sm font-medium text-slate-600">
                             {{ $customer->name }} - {{ $customer->internet_number }}
                         </div>
+
+                        @if((float) $invoice->amount_paid > 0)
+                        <div class="mt-4 grid grid-cols-2 gap-4 text-left bg-green-50 rounded-lg p-4 border border-green-200">
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium">Total Tagihan</p>
+                                <p class="text-base font-bold text-slate-800">Rp {{ number_format($displayPrice, 0, ',', '.') }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-green-600 font-medium">Sudah Dibayar</p>
+                                <p class="text-base font-bold text-green-700">Rp {{ number_format($invoice->amount_paid, 0, ',', '.') }}</p>
+                            </div>
+                        </div>
+                        @endif
                     </div>
+
+                    @php
+                        $previousInvoices = \App\Models\Invoice::where('customer_id', $invoice->customer_id)
+                            ->where('id', '!=', $invoice->id)
+                            ->where('due_date', '<', $invoice->due_date)
+                            ->whereIn('status', ['unpaid', 'carried'])
+                            ->orderBy('due_date', 'asc')
+                            ->get();
+                        $arrearsList = [];
+                        foreach ($previousInvoices as $prevInv) {
+                            $prevPrice = $prevInv->price > 0 ? $prevInv->price : ($customer->monthly_price ?? 0);
+                            $prevOutstanding = $prevPrice - (float) $prevInv->amount_paid;
+                            if ($prevOutstanding > 0) {
+                                $arrearsList[] = [
+                                    'period' => \Carbon\Carbon::parse($prevInv->due_date)->isoFormat('MMMM Y'),
+                                    'amount' => $prevOutstanding
+                                ];
+                            }
+                        }
+                    @endphp
+
+                    @if(count($arrearsList) > 0)
+                    <div class="mb-6 rounded-md bg-orange-50 p-4 border border-orange-200">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-orange-400 mt-0.5"></i>
+                            </div>
+                            <div class="ml-3 w-full">
+                                <h3 class="text-sm font-medium text-orange-800">Terdapat Tunggakan Bulan Sebelumnya</h3>
+                                <div class="mt-2 text-sm text-orange-700">
+                                    <ul class="list-disc pl-5 space-y-1">
+                                        @foreach($arrearsList as $arr)
+                                            <li>Bulan {{ $arr['period'] }}: <strong>Rp {{ number_format($arr['amount'], 0, ',', '.') }}</strong></li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
 
                     <div class="grid grid-cols-2 gap-6 border-t border-slate-100 pt-6">
                         <div>

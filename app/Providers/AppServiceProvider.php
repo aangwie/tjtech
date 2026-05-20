@@ -21,44 +21,43 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // LOGIKA FAVICON GLOBAL
-        // Cek dulu apakah tabel companies sudah ada dan aplikasi tidak sedang berjalan di console (migrate, dsb)
-        // Agar tidak error saat migrate fresh atau saat kolom belum ada
-        if (!app()->runningInConsole() && Schema::hasTable('companies')) {
-            $company = null;
-
-            // Cek apakah kolom admin_id sudah ada (karena ditambahkan lewat migrasi)
-            if (Schema::hasColumn('companies', 'admin_id')) {
-                // Kita ambil company milik user yang punya role superadmin
-                $company = Company::whereHas('admin', function ($q) {
-                    $q->where('role', 'superadmin');
-                })->first();
+        if (!app()->runningInConsole()) {
+            try {
+                $company = \Illuminate\Support\Facades\Cache::rememberForever('global_company', function () {
+                    if (Schema::hasColumn('companies', 'admin_id')) {
+                        $c = Company::whereHas('admin', function ($q) {
+                            $q->where('role', 'superadmin');
+                        })->first();
+                        if ($c) return $c;
+                    }
+                    return Company::first();
+                });
+                
+                $faviconUrl = ($company && $company->logo_path)
+                    ? asset('uploads/' . $company->logo_path)
+                    : asset('favicon.ico');
+                
+                View::share('global_favicon', $faviconUrl);
+                View::share('company', $company);
+            } catch (\Exception $e) {
+                View::share('global_favicon', asset('favicon.ico'));
+                View::share('company', null);
             }
 
-            // Jika tidak ada (mungkin belum set atau kolom belum ada), ambil yang pertama saja
-            if (!$company) {
-                $company = Company::first();
-            }
+            try {
+                $setting = \Illuminate\Support\Facades\Cache::rememberForever('global_site_setting', function () {
+                    return SiteSetting::first();
+                });
 
-            // Jika ada logo di database, pakai itu. Jika tidak, pakai default laravel (favicon.ico)
-            $faviconUrl = ($company && $company->logo_path)
-                ? asset('uploads/' . $company->logo_path)
-                : asset('favicon.ico');
-
-            // Bagikan variable $global_favicon dan $company ke semua view
-            View::share('global_favicon', $faviconUrl);
-            View::share('company', $company);
-        }
-
-        // Force HTTPS or HTTP based on SiteSetting (Only force HTTPS if NOT on local)
-        if (!app()->runningInConsole() && Schema::hasTable('site_settings')) {
-            $setting = SiteSetting::first();
-            if ($setting) {
-                if ($setting->connection_mode === 'https' && !app()->isLocal()) {
-                    URL::forceScheme('https');
-                } elseif ($setting->connection_mode === 'http') {
-                    URL::forceScheme('http');
+                if ($setting) {
+                    if ($setting->connection_mode === 'https' && !app()->isLocal()) {
+                        URL::forceScheme('https');
+                    } elseif ($setting->connection_mode === 'http') {
+                        URL::forceScheme('http');
+                    }
                 }
+            } catch (\Exception $e) {
+                // Ignore errors (e.g. table not found during migration)
             }
         }
 

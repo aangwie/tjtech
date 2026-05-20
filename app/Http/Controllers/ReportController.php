@@ -39,16 +39,21 @@ class ReportController extends Controller
         // 4. Hitung Rekapitulasi (Dari data yang sudah difilter di atas)
         $totalTagihan = $invoices->sum(fn($inv) => $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0));
 
-        // Uang Masuk (Pendapatan) = pembayaran manual + kelebihan yang masuk saldo (sama dengan card Pendapatan di /billing)
+        // Uang Masuk (Pendapatan) = total pembayaran manual (sama dengan card Pendapatan di /billing)
         $paidBill = BillingPayment::whereIn('invoice_id', $invoiceIds)
             ->where('method', 'manual')
             ->sum('amount');
-        $excessToBalance = BillingPayment::whereIn('invoice_id', $invoiceIds)
-            ->sum('excess_to_balance');
-        $totalPendapatan = (float) $paidBill + (float) $excessToBalance;
+        $totalPendapatan = (float) $paidBill;
 
-        // Kurang Bayar = total underpayment dari invoice unpaid
-        $totalKurangBayar = $invoices->where('status', 'unpaid')->sum('underpayment');
+        // Saldo = kelebihan pembayaran yang masuk ke saldo pelanggan pada periode ini
+        $totalSaldo = BillingPayment::whereIn('invoice_id', $invoiceIds)
+            ->sum('excess_to_balance');
+
+        // Kurang Bayar = total outstanding dari invoice unpaid (price - amount_paid)
+        $totalKurangBayar = $invoices->where('status', 'unpaid')->sum(function ($inv) {
+            $price = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
+            return max(0, $price - (float) $inv->amount_paid);
+        });
 
         $jumlahLunas = $invoices->where('status', 'paid')->count();
         $jumlahBelumLunas = $invoices->where('status', 'unpaid')->count();
@@ -60,6 +65,7 @@ class ReportController extends Controller
             'totalTagihan', 
             'totalPendapatan', 
             'totalKurangBayar',
+            'totalSaldo',
             'jumlahLunas',
             'jumlahBelumLunas'
         ));

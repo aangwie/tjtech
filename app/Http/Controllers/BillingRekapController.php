@@ -49,45 +49,78 @@ class BillingRekapController extends Controller
         $periodExcessToBalance = BillingPayment::whereIn('invoice_id', $invoiceIdsAll)
             ->sum('excess_to_balance');
 
-        // Pendapatan = pembayaran manual + kelebihan yang masuk saldo
-        $periodRevenue = (float) $periodPaidBill + (float) $periodExcessToBalance;
+        // Dibayar Manual (net) = pembayaran manual - kelebihan yang masuk saldo
+        $periodDibayarManual = (float) $periodPaidBill - (float) $periodExcessToBalance;
 
-        // Kurang Bayar (underpayment dari invoice unpaid periode ini)
-        $periodUnderpayment = $invoices->where('status', 'unpaid')->sum('underpayment');
+        // Pendapatan = total pembayaran manual
+        $periodRevenue = (float) $periodPaidBill;
+
+        // Kurang Bayar (outstanding dari invoice unpaid periode ini)
+        $periodUnderpayment = $invoices->where('status', 'unpaid')->sum(function ($inv) {
+            $price = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
+            return max(0, $price - (float) $inv->amount_paid);
+        });
 
         // =============================================
         // CARD BARIS 2: Data Grand Total (Semua Periode)
         // =============================================
-        $customerQuery = Customer::with(['invoices']);
 
+        // Total Tagihan = jumlah seluruh tagihan yang belum terbayar lunas (unpaid)
+        // termasuk sisa kekurangannya (harga - amount_paid)
+        $allUnpaidQuery = Invoice::with('customer')->where('status', 'unpaid');
         if ($user->role == 'operator') {
-            $customerQuery->where('operator_id', $user->id);
+            $allUnpaidQuery->whereHas('customer', function ($q) use ($user) {
+                $q->where('operator_id', $user->id);
+            });
         } elseif ($user->role == 'superadmin' && $selectedAdminId) {
-            $customerQuery->where('admin_id', $selectedAdminId);
-        }
-
-        $customers = $customerQuery->orderBy('name', 'asc')->get();
-
-        $grandTotalTagihan = 0;
-        $grandTotalBayar = 0;
-        $grandTotalSaldo = 0;
-        $grandTotalKurangBayar = 0;
-
-        foreach ($customers as $customer) {
-            $totalTagihan = $customer->invoices->where('status', 'unpaid')->sum(function ($inv) use ($customer) {
-                return $inv->price > 0 ? $inv->price : ($customer->monthly_price ?? 0);
+            $allUnpaidQuery->whereHas('customer', function ($q) use ($selectedAdminId) {
+                $q->where('admin_id', $selectedAdminId);
             });
-            $totalBayar = $customer->invoices->where('status', 'paid')->sum('amount_paid');
-            $totalKurangBayar = $customer->invoices->where('status', 'unpaid')->sum(function ($inv) use ($customer) {
-                $price = $inv->price > 0 ? $inv->price : ($customer->monthly_price ?? 0);
-                return $price - ($inv->amount_paid ?? 0) - ($inv->carried_underpayment ?? 0);
-            });
-
-            $grandTotalTagihan += $totalTagihan;
-            $grandTotalBayar += $totalBayar;
-            $grandTotalSaldo += (float) $customer->balance;
-            $grandTotalKurangBayar += $totalKurangBayar;
         }
+        $allUnpaidInvoices = $allUnpaidQuery->get();
+        $grandTotalTagihan = $allUnpaidInvoices->sum(function ($inv) {
+            $price = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
+            return max(0, $price - (float) $inv->amount_paid);
+        });
+
+        // Total Sudah Bayar = seluruh pembayaran manual di semua periode
+        $manualPaymentQuery = BillingPayment::where('method', 'manual');
+        if ($user->role == 'operator') {
+            $manualPaymentQuery->whereHas('invoice.customer', function ($q) use ($user) {
+                $q->where('operator_id', $user->id);
+            });
+        } elseif ($user->role == 'superadmin' && $selectedAdminId) {
+            $manualPaymentQuery->whereHas('invoice.customer', function ($q) use ($selectedAdminId) {
+                $q->where('admin_id', $selectedAdminId);
+            });
+        }
+        $grandTotalBayar = (float) $manualPaymentQuery->sum('amount');
+
+        // Total Dibayar Pakai Saldo = seluruh pembayaran yang menggunakan saldo
+        // (method = 'balance' atau 'auto_balance', atau balance_used > 0)
+        $balancePaymentQuery = BillingPayment::where(function ($q) {
+            $q->whereIn('method', ['balance', 'auto_balance'])
+              ->orWhere('balance_used', '>', 0);
+        });
+        if ($user->role == 'operator') {
+            $balancePaymentQuery->whereHas('invoice.customer', function ($q) use ($user) {
+                $q->where('operator_id', $user->id);
+            });
+        } elseif ($user->role == 'superadmin' && $selectedAdminId) {
+            $balancePaymentQuery->whereHas('invoice.customer', function ($q) use ($selectedAdminId) {
+                $q->where('admin_id', $selectedAdminId);
+            });
+        }
+        $grandTotalDibayarSaldo = (float) $balancePaymentQuery->sum('balance_used')
+            + (float) BillingPayment::whereIn('method', ['balance', 'auto_balance'])
+                ->when($user->role == 'operator', function ($q) use ($user) {
+                    $q->whereHas('invoice.customer', fn($q2) => $q2->where('operator_id', $user->id));
+                })
+                ->when($user->role == 'superadmin' && $selectedAdminId, function ($q) use ($selectedAdminId) {
+                    $q->whereHas('invoice.customer', fn($q2) => $q2->where('admin_id', $selectedAdminId));
+                })
+                ->where('balance_used', 0)
+                ->sum('amount');
 
         $admins = [];
         if ($user->role == 'superadmin') {
@@ -99,12 +132,12 @@ class BillingRekapController extends Controller
             'year',
             'periodPaidBill',
             'periodExcessToBalance',
+            'periodDibayarManual',
             'periodRevenue',
             'periodUnderpayment',
             'grandTotalTagihan',
             'grandTotalBayar',
-            'grandTotalSaldo',
-            'grandTotalKurangBayar',
+            'grandTotalDibayarSaldo',
             'admins',
             'selectedAdminId'
         ));
