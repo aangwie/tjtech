@@ -79,12 +79,7 @@
 
 
     <!-- Stats Cards -->
-    @if(isset($secrets) && isset($actives))
-        @php
-            $totalUser = count($secrets);
-            $onlineUser = $actives->count();
-            $offlineUser = $totalUser - $onlineUser;
-        @endphp
+    @if(isset($totalUser) && isset($onlineUser) && isset($offlineUser))
         <dl class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
             <!-- Total -->
             <div
