@@ -170,7 +170,6 @@ class DashboardController extends Controller
                 $routerLogs = \App\Models\RouterConnectionLog::with('routerSetting')
                     ->where('user_id', $user->id)
                     ->orderBy('created_at', 'desc')
-                    ->limit(5)
                     ->get();
             } catch (\Exception $e) {
                 // Ignore if migration not run yet

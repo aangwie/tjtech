@@ -4,6 +4,24 @@
 @section('header', 'Dashboard')
 @section('subheader', 'Ringkasan pelanggan, tagihan, pembayaran & informasi sistem')
 
+@push('styles')
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.tailwindcss.css">
+    <style>
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 1rem;
+            color: #64748b;
+        }
+        .dataTables_wrapper .dataTables_info {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+        .dataTables_wrapper .dataTables_paginate {
+            margin-top: 0.75rem;
+        }
+    </style>
+@endpush
+
 @section('content')
 
     {{-- ════════════════════════════════════════════════════════════════
@@ -273,10 +291,10 @@
                 <h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-white">
                     <i class="fas fa-history mr-2 text-indigo-500"></i>Log Koneksi MikroTik Admin
                 </h3>
-                <span class="text-xs text-slate-500 dark:text-slate-400">5 Koneksi Terakhir</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">Riwayat Log Koneksi</span>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+            <div class="overflow-x-auto p-6">
+                <table id="tableRouterLogs" class="w-full text-left border-collapse divide-y divide-slate-200 dark:divide-slate-700">
                     <thead class="bg-slate-50 dark:bg-slate-800/80">
                         <tr>
                             <th scope="col" class="py-3.5 pl-6 pr-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Waktu</th>
@@ -337,9 +355,27 @@
 @endsection
 
 @push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
+    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.tailwindcss.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Init DataTable for Connection Logs
+            $('#tableRouterLogs').DataTable({
+                responsive: true,
+                order: [[0, 'desc']],
+                language: {
+                    emptyTable: 'Belum ada log koneksi tercatat',
+                    info: 'Menampilkan _START_ - _END_ dari _TOTAL_ data',
+                    search: 'Cari:',
+                    lengthMenu: 'Tampilkan _MENU_ data',
+                    paginate: { previous: '‹', next: '›' }
+                },
+                pageLength: 5,
+                lengthMenu: [5, 10, 25, 50]
+            });
+
             const isDark = document.documentElement.classList.contains('dark');
             const gridColor = isDark ? 'rgba(148,163,184,0.1)' : 'rgba(0,0,0,0.06)';
             const textColor = isDark ? '#94a3b8' : '#64748b';
