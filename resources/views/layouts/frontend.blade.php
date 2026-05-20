@@ -64,7 +64,7 @@
                         </div>
                     @endif
                     <span class="text-xl font-bold text-primary-900 dark:text-white tracking-tight">
-                        <a href="{{ config('app.url') }}">{{ $company->name ?? 'BillNesia' }}</a>
+                        <a href="{{ config('app.url') }}">{{ $company->company_name ?? 'BillNesia' }}</a>
                     </span>
                 </div>
 
