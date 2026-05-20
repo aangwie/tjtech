@@ -204,9 +204,13 @@ class CustomerController extends Controller
     // --- LOGIKA SINKRONISASI (AJAX) ---
 
     // Tahap A: Ambil daftar username dari Mikrotik
-    public function syncGetList()
+    public function syncGetList(Request $request)
     {
         try {
+            $user = auth()->user();
+            $adminId = $user->isSuperAdmin() ? ($request->admin_id ?: $user->id) : ($user->isAdmin() ? $user->id : $user->parent_id);
+            $this->mikrotik->setAdminId($adminId);
+
             $secrets = $this->mikrotik->getSecrets();
             // Kita hanya butuh data mentahnya untuk dikirim ke JS
             return response()->json([
@@ -227,16 +231,29 @@ class CustomerController extends Controller
         }
 
         $user = auth()->user();
-        $admin = $user->isSuperAdmin() ? ($user->isSuperAdmin() && $request->admin_id ? User::find($request->admin_id) : $user) : ($user->isAdmin() ? $user : $user->parent);
-        
-        // If superadmin but no admin selected/found, fallback to current user
-        if (!$admin) $admin = $user;
+        $adminId = $user->isSuperAdmin() ? ($request->admin_id ?: $user->id) : ($user->isAdmin() ? $user->id : $user->parent_id);
+        $this->mikrotik->setAdminId($adminId);
+
+        $routerConfig = $this->mikrotik->getConfig();
+        if (!$routerConfig) {
+            return response()->json(['status' => 'error', 'message' => 'Tidak ada router aktif yang ditemukan.'], 400);
+        }
+
+        // Owner of the router setting is the admin for these customers
+        $routerOwnerId = $routerConfig->admin_id;
+        if (!$routerOwnerId) {
+            $routerOwnerId = $adminId;
+        }
+
+        $admin = User::find($routerOwnerId);
+        if (!$admin) {
+            return response()->json(['status' => 'error', 'message' => 'Admin pemilik router tidak ditemukan.'], 404);
+        }
 
         $customer = Customer::where('admin_id', $admin->id)->where('pppoe_username', $secret['name'])->first();
 
         // Check Plan Limit (Total Pelanggan)
-        if (!$user->isSuperAdmin()) {
-            $admin = $user->isAdmin() ? $user : $user->parent;
+        if (!$admin->isSuperAdmin()) {
             $plan = $admin->plan;
 
             if ($plan && $plan->max_customers > 0 && !$customer) {
@@ -244,7 +261,7 @@ class CustomerController extends Controller
                 if ($currentCount >= $plan->max_customers) {
                     return response()->json([
                         'status' => 'error',
-                        'message' => "Limit pelanggan ({$plan->max_customers}) tercapai. Sinkronisasi dihentikan.",
+                        'message' => "Limit pelanggan ({$plan->max_customers}) tercapai untuk Admin {$admin->name}. Sinkronisasi dihentikan.",
                         'stop' => true
                     ], 403);
                 }
@@ -262,13 +279,12 @@ class CustomerController extends Controller
             // Logic Insert Baru (DIPERBARUI)
 
             // Generate 8 Digit Angka Acak untuk Nomor Internet
-            // Loop while sederhana untuk memastikan benar-benar unik (opsional tapi disarankan)
             do {
                 $randomInet = rand(10000000, 99999999);
             } while (Customer::where('internet_number', $randomInet)->exists());
 
             Customer::create([
-                'admin_id' => $admin->id, // <-- Explicitly set resolved admin ID
+                'admin_id' => $admin->id, // <-- Explicitly set resolved admin ID (owner of the router)
                 'internet_number' => $randomInet, // <-- Pakai angka acak 8 digit
                 'name' => $secret['comment'] ?? $secret['name'],
                 'pppoe_username' => $secret['name'],

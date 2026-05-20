@@ -863,17 +863,19 @@
         function generateRandomInet() { document.getElementById('addInetNum').value = Math.floor(10000000 + Math.random() * 90000000); }
         function generateRandomInetEdit() { document.getElementById('editInet').value = Math.floor(10000000 + Math.random() * 90000000); }
         function startSync() {
+            let adminId = $('select[name="admin_id"]').val() || '';
             $('#syncInitial').hide(); $('#syncProgress').show();
             $.ajax({
                 url: "{{ route('sync.list') }}", type: "GET",
+                data: { admin_id: adminId },
                 success: function (res) {
-                    if (res.status === 'success') processQueue(res.data, res.total, 0);
+                    if (res.status === 'success') processQueue(res.data, res.total, 0, adminId);
                     else { alert(res.message); location.reload(); }
                 },
                 error: function () { alert("Koneksi Error"); }
             });
         }
-        function processQueue(secrets, total, index) {
+        function processQueue(secrets, total, index, adminId) {
             if (index >= total) { $('#progressBar').css('width', '100%'); $('#syncProgress').hide(); $('#syncDone').show(); return; }
             let item = secrets[index];
             let percent = Math.round(((index + 1) / total) * 100);
@@ -881,13 +883,17 @@
             $('#syncStatusText').text("Memproses: " + item.name);
             $.ajax({
                 url: "{{ route('sync.process') }}", type: "POST",
-                data: { _token: $('meta[name="csrf-token"]').attr('content'), secret: item },
+                data: { 
+                    _token: $('meta[name="csrf-token"]').attr('content'), 
+                    secret: item,
+                    admin_id: adminId
+                },
                 success: function (res) {
                     let badge = res.status === 'created' 
                         ? '<span class="inline-flex items-center rounded-md bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/20 mr-1.5">[DATA BARU]</span>' 
                         : '<span class="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-400 ring-1 ring-inset ring-blue-600/20 mr-1.5">[DATA LAMA]</span>';
                     $(`#syncLog`).prepend(`<li class="flex items-center py-1">` + badge + `<span class="text-slate-700 dark:text-slate-300">` + res.name + `</span></li>`);
-                    processQueue(secrets, total, index + 1);
+                    processQueue(secrets, total, index + 1, adminId);
                 },
                 error: function (xhr) {
                     let res = xhr.responseJSON;
@@ -897,7 +903,7 @@
                         $(`#syncDone`).show();
                         return;
                     }
-                    processQueue(secrets, total, index + 1);
+                    processQueue(secrets, total, index + 1, adminId);
                 }
             });
         }

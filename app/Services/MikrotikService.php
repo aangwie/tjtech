@@ -26,6 +26,33 @@ class MikrotikService
         }
     }
 
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    public function setAdminId($adminId)
+    {
+        if ($adminId) {
+            $config = RouterSetting::withoutGlobalScopes()
+                ->where('admin_id', $adminId)
+                ->where('is_active', true)
+                ->first();
+            
+            if (!$config) {
+                $config = RouterSetting::withoutGlobalScopes()
+                    ->where('admin_id', $adminId)
+                    ->first();
+            }
+
+            if ($config) {
+                $this->config = $config;
+                $this->client = null;
+                $this->connectionAttempted = false;
+            }
+        }
+    }
+
     protected function connect()
     {
         if ($this->connectionAttempted) {
