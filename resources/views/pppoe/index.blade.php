@@ -166,7 +166,8 @@
                     <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                         @foreach($secrets as $secret)
                             @php
-                                $name = $secret['name'];
+                                $name = $secret['name'] ?? null;
+                                if (!$name) continue;
                                 $isActive = $actives->has($name);
                                 $activeData = $isActive ? $actives[$name] : null;
                                 $isDisabled = isset($secret['disabled']) && $secret['disabled'] == 'true';
