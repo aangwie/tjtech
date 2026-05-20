@@ -77,7 +77,7 @@ class MikrotikService
                 'user' => $this->config->username,
                 'pass' => $this->config->password,
                 'port' => (int) $this->config->port,
-                'timeout' => 2, // Reduced timeout (2s instead of 10s)
+                'timeout' => 10, // Increased timeout (10s) for data operations over WAN/VPN
             ]);
         } catch (\Throwable $e) {
             $this->client = null;
