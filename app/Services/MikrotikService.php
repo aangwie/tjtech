@@ -45,7 +45,7 @@ class MikrotikService
                 'port' => (int) $this->config->port,
                 'timeout' => 10,
             ]);
-        } catch (ConnectException | ClientException $e) {
+        } catch (\Throwable $e) {
             $this->client = null;
         }
     }
@@ -69,9 +69,13 @@ class MikrotikService
         if (!$this->isConnected())
             return [];
 
-        // /ppp/active/print
-        $query = new Query('/ppp/active/print');
-        return $this->client->query($query)->read();
+        try {
+            // /ppp/active/print
+            $query = new Query('/ppp/active/print');
+            return $this->client->query($query)->read();
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     // Ambil daftar semua user terdaftar (Secret)
@@ -80,9 +84,13 @@ class MikrotikService
         if (!$this->isConnected())
             return [];
 
-        // /ppp/secret/print
-        $query = new Query('/ppp/secret/print');
-        return $this->client->query($query)->read();
+        try {
+            // /ppp/secret/print
+            $query = new Query('/ppp/secret/print');
+            return $this->client->query($query)->read();
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     // Logic untuk memutus koneksi user

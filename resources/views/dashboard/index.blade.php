@@ -417,6 +417,26 @@
 
             // Poll every 5 seconds
             setInterval(updateSystemStats, 5000);
+
+            // --- SweetAlert2 Router Offline Warning ---
+            @if(!$isConnected)
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'MikroTik Terputus!',
+                    text: 'Aplikasi saat ini tidak dapat terhubung ke Router MikroTik Anda. Data pelanggan real-time tidak tersedia.',
+                    confirmButtonText: '<i class="fas fa-cog mr-1"></i>Periksa Pengaturan',
+                    showCancelButton: true,
+                    cancelButtonText: 'Tutup',
+                    confirmButtonColor: '#6366f1',
+                    cancelButtonColor: '#64748b',
+                    background: isDark ? '#1e293b' : '#ffffff',
+                    color: isDark ? '#f1f5f9' : '#0f172a',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = "{{ route('router.index') }}";
+                    }
+                });
+            @endif
         });
     </script>
 @endpush
