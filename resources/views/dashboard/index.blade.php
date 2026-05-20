@@ -264,6 +264,76 @@
         </div>
     </div>
 
+    {{-- ════════════════════════════════════════════════════════════════
+    ROUTER CONNECTION LOGS
+    ════════════════════════════════════════════════════════════════ --}}
+    <div class="mb-8">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 overflow-hidden">
+            <div class="border-b border-slate-200 dark:border-slate-700 px-6 py-4 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
+                <h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-white">
+                    <i class="fas fa-history mr-2 text-indigo-500"></i>Log Koneksi MikroTik Admin
+                </h3>
+                <span class="text-xs text-slate-500 dark:text-slate-400">5 Koneksi Terakhir</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                    <thead class="bg-slate-50 dark:bg-slate-800/80">
+                        <tr>
+                            <th scope="col" class="py-3.5 pl-6 pr-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Waktu</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nama Router</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">IP Address</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
+                        @forelse($routerLogs as $log)
+                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors">
+                                <td class="whitespace-nowrap py-4 pl-6 pr-3 text-sm font-medium text-slate-900 dark:text-white">
+                                    {{ \Carbon\Carbon::parse($log->created_at)->locale('id')->isoFormat('DD MMM YYYY, HH:mm:ss') }}
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-300">
+                                    <div class="flex flex-col">
+                                        <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $log->routerSetting->label ?? 'Router' }}</span>
+                                        <span class="text-xs text-slate-400">{{ $log->routerSetting->host ?? '-' }}:{{ $log->routerSetting->port ?? '-' }}</span>
+                                    </div>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                    @if($log->status === 'success')
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/10 dark:ring-emerald-500/20">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                            Terhubung
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-900/20 px-2 py-1 text-xs font-medium text-rose-700 dark:text-rose-400 ring-1 ring-inset ring-rose-600/10 dark:ring-rose-500/20">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+                                            Gagal
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500 dark:text-slate-300">
+                                    <code>{{ $log->ip_address ?? '-' }}</code>
+                                </td>
+                                <td class="px-3 py-4 text-sm text-slate-500 dark:text-slate-300 max-w-xs truncate" title="{{ $log->error_message }}">
+                                    {{ $log->error_message ?? '-' }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                                    <div class="flex flex-col items-center justify-center space-y-2">
+                                        <i class="fas fa-info-circle text-slate-400 fa-2x"></i>
+                                        <span>Belum ada log koneksi tercatat. Jalankan migrasi di hosting jika diperlukan.</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')

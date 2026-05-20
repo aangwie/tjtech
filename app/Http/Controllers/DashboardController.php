@@ -38,6 +38,27 @@ class DashboardController extends Controller
 
         // ── Customer Stats (Optimized: Fetch from Mikrotik for real-time status) ──
         $isConnected = $this->mikrotik->isConnected();
+
+        // ── LOG ROUTER CONNECTION ATTEMPT ──
+        $activeRouter = \App\Models\RouterSetting::where('is_active', true)->first();
+        if (!$activeRouter) {
+            $activeRouter = \App\Models\RouterSetting::first();
+        }
+
+        if ($activeRouter) {
+            try {
+                \App\Models\RouterConnectionLog::create([
+                    'user_id' => $user->id,
+                    'router_setting_id' => $activeRouter->id,
+                    'status' => $isConnected ? 'success' : 'failed',
+                    'error_message' => $isConnected ? null : 'Failed to establish connection or stream timed out',
+                    'ip_address' => request()->ip(),
+                ]);
+            } catch (\Exception $e) {
+                // Ignore if migration not run yet
+            }
+        }
+
         $totalCustomers = 0;
         $activeCustomers = 0;
         $disabledCustomers = 0;
@@ -51,10 +72,10 @@ class DashboardController extends Controller
 
             // Filter Mikrotik data to only show what belongs to this login ID
             $mySecrets = array_filter($secrets, function ($s) use ($myCustomerUsernames) {
-                return in_array($s['name'], $myCustomerUsernames);
+                return is_array($s) && isset($s['name']) && in_array($s['name'], $myCustomerUsernames);
             });
             $myActives = array_filter($actives, function ($a) use ($myCustomerUsernames) {
-                return in_array($a['name'], $myCustomerUsernames);
+                return is_array($a) && isset($a['name']) && in_array($a['name'], $myCustomerUsernames);
             });
 
             $totalCustomers = count($mySecrets);
@@ -132,6 +153,20 @@ class DashboardController extends Controller
         // ── System Monitor (Realtime) ──
         $systemStats = $this->getSystemMonitorStats();
 
+        // ── Fetch Router Connection Logs ──
+        $routerLogs = [];
+        if (isset($activeRouter) && $activeRouter) {
+            try {
+                $routerLogs = \App\Models\RouterConnectionLog::with('routerSetting')
+                    ->where('user_id', $user->id)
+                    ->orderBy('created_at', 'desc')
+                    ->limit(5)
+                    ->get();
+            } catch (\Exception $e) {
+                // Ignore if migration not run yet
+            }
+        }
+
         return view('dashboard.index', compact(
             'totalCustomers',
             'activeCustomers',
@@ -145,7 +180,8 @@ class DashboardController extends Controller
             'isConnected',
             'phpVersion',
             'dbVersion',
-            'systemStats'
+            'systemStats',
+            'routerLogs'
         ));
     }
 
