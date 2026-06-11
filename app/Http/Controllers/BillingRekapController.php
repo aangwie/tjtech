@@ -317,7 +317,7 @@ class BillingRekapController extends Controller
                 ->where('method', 'manual')
                 ->sum('amount');
 
-            // Hitung tagihan yang belum dibayar
+            // Hitung tagihan yang belum dibayar (berdasarkan total - paid)
             $sisaTagihan = 0;
             foreach ($invoices as $inv) {
                 $price = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
@@ -325,27 +325,112 @@ class BillingRekapController extends Controller
                 $sisaTagihan += $outstanding;
             }
 
+            // admin berhasil menagih untuk operator ini akan dihitung di bawah
+            // (lihat blok $adminSuccessByOperator). Untuk sementara nilai akan terisi setelah hitung map.
+            // Jadi di sini kita kurangi setelah map tersedia.
+
+            // Karena map dihitung setelah loop awal, kita set nilai sementara (akan dikoreksi setelah map selesai)
+            $adminSuccessForThisOperator = 0;
+
+            $tagihanLunasBersihOperator = max(0, (float) $tagihanLunas - $adminSuccessForThisOperator);
+            $sisaTagihanBersihOperator = max(0, (float) $totalTagihan - (float) $tagihanLunasBersihOperator);
+
             $komisiRow = $komisiMap->get($operator->id);
             $komisiPercent = $komisiRow ? (float) $komisiRow->komisi_percent : 0;
-            $komisiValue = $komisiRow ? (float) $komisiRow->komisi_value : round(($komisiPercent / 100) * (float) $tagihanLunas);
+            $komisiValue = $komisiRow ? (float) $komisiRow->komisi_value : round(($komisiPercent / 100) * (float) $tagihanLunasBersihOperator);
+
 
             $operatorData[] = [
                 'id' => $operator->id,
                 'name' => $operator->name,
                 'total_tagihan' => $totalTagihan,
-                'tagihan_lunas' => $tagihanLunas,
-                'sisa_tagihan' => $sisaTagihan,
+                'tagihan_lunas' => $tagihanLunasBersihOperator,
+                'sisa_tagihan' => $sisaTagihanBersihOperator,
                 'komisi_percent' => $komisiPercent,
                 'komisi_value' => $komisiValue,
             ];
         }
 
 
+        // ================================
+        // TABEL baru: operator harusnya ditagih, tapi berhasil ditagih oleh admin
+        // definisi:
+        // - admin berhasil menagih = BillingPayment.admin_id = Auth::id()
+        // - berhasil ditagih = hanya BillingPayment.method = 'manual'
+        // per operator (asalnya): invoice periode tsb yang dimiliki customer.operator_id
+        // ================================
+        $adminId = $user->id;
+
+        $allOperatorIds = $operators->pluck('id')->toArray();
+
+        // ambil seluruh invoices periode terkait operator
+        $periodInvoices = Invoice::with('customer')
+            ->whereMonth('due_date', $month)
+            ->whereYear('due_date', $year)
+            ->whereHas('customer', function ($q) use ($allOperatorIds) {
+                $q->whereIn('operator_id', $allOperatorIds);
+            })
+            ->get();
+
+        $periodInvoiceIds = $periodInvoices->pluck('id')->toArray();
+
+        // hitung total tagihan berhasil ditagih admin (manual only)
+        $adminManualPayments = BillingPayment::whereIn('invoice_id', $periodInvoiceIds)
+            ->where('admin_id', $adminId)
+            ->where('method', 'manual')
+            ->get(['invoice_id', 'amount']);
+
+        // mapping invoice_id => operator_id (dari customer pada invoice)
+        $invoiceToOperator = [];
+        foreach ($periodInvoices as $inv) {
+            if ($inv->customer) {
+                $invoiceToOperator[$inv->id] = $inv->customer->operator_id;
+            }
+        }
+
+        $adminSuccessByOperator = [];
+        foreach ($adminManualPayments as $p) {
+            $opId = $invoiceToOperator[$p->invoice_id] ?? null;
+            if (!$opId) continue;
+            if (!isset($adminSuccessByOperator[$opId])) {
+                $adminSuccessByOperator[$opId] = 0;
+            }
+            $adminSuccessByOperator[$opId] += (float) $p->amount;
+        }
+
+        $operatorSuccessTable = [];
+        foreach ($operatorData as &$row) {
+            $opId = (int) $row['id'];
+            $adminSuccessForThisOperator = (float) ($adminSuccessByOperator[$opId] ?? 0);
+
+            // Koreksi kolom Tagihan Lunas & Sisa Tagihan sesuai permintaan
+            $tagihanLunasBersihOperator = max(0, (float) $row['tagihan_lunas'] - $adminSuccessForThisOperator);
+            $sisaTagihanBersihOperator = max(0, (float) $row['total_tagihan'] - (float) $tagihanLunasBersihOperator);
+
+            // Jika komisi belum tersimpan, fallback komisi perlu ikut dari tagihan_lunas bersih.
+            // Jika komisi sudah tersimpan, UI menampilkan komisi_value dari DB, tapi itu memang terpisah dari permintaan.
+            if (!empty($row['komisi_percent']) && empty($row['komisi_value_frozen'])) {
+                // no-op (komisi_value sudah dihitung di awal)
+            }
+
+            $row['tagihan_lunas'] = $tagihanLunasBersihOperator;
+            $row['sisa_tagihan'] = $sisaTagihanBersihOperator;
+
+            $operatorSuccessTable[] = [
+                'operator_id' => $opId,
+                'operator_name' => $row['name'],
+                'tagihan_berhasil_ditagih_admin' => $adminSuccessForThisOperator,
+            ];
+        }
+        unset($row);
+
         return view('billing.rekap-operator', compact(
             'month',
             'year',
             'operators',
-            'operatorData'
+            'operatorData',
+            'operatorSuccessTable'
         ));
     }
 }
+

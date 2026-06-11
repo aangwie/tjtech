@@ -181,11 +181,36 @@
                                 <td class="px-4 py-3 font-bold text-orange-600 dark:text-orange-400">
                                     Rp {{ number_format(array_sum(array_column($operatorData, 'tagihan_lunas')) - array_sum(array_column($operatorData, 'komisi_value')), 0, ',', '.') }}
                                 </td>
-
                             </tr>
                         </tfoot>
                     @endif
                 </table>
+
+                <!-- Tabel baru: ditagih oleh operator tapi berhasil ditagih admin -->
+                <div class="mt-6 overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-l-lg">Operator</th>
+                                <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-r-lg text-right">Berhasil Ditagih Admin (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                            @forelse($operatorSuccessTable ?? [] as $row)
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                                    <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ $row['operator_name'] }}</td>
+                                    <td class="px-4 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">Rp {{ number_format((float)$row['tagihan_berhasil_ditagih_admin'], 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                                        Tidak ada data.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
