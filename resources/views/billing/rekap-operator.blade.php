@@ -74,7 +74,14 @@
                                 Sisa Tagihan</th>
                             <th
                                 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-r-lg text-center">
-                                Persentase</th>
+                                Komisi (%)</th>
+                            <th
+                                class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 text-center">
+                                Komisi (Rp.)</th>
+                            <th
+                                class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 text-center">
+                                Tagihan Bersih</th>
+
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -102,18 +109,44 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 align-middle text-center">
-                                    @if($data['total_tagihan'] > 0)
-                                        @php
-                                            $percentage = round(($data['tagihan_lunas'] / $data['total_tagihan']) * 100, 1);
-                                            $colorClass = $percentage >= 80 ? 'text-green-600' : ($percentage >= 50 ? 'text-yellow-600' : 'text-red-600');
-                                        @endphp
-                                        <span class="font-semibold {{ $colorClass }}">
-                                            {{ $percentage }}%
-                                        </span>
+                                    @php
+                                        $komisiPercent = isset($data['komisi_percent']) ? (float) $data['komisi_percent'] : 0;
+                                        $isAdminCanEdit = in_array(auth()->user()->role, ['admin','superadmin']);
+                                    @endphp
+
+                                    @if($isAdminCanEdit)
+                                        <div class="flex items-center justify-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="1"
+                                                class="w-24 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/20 text-center"
+                                                value="{{ $komisiPercent }}"
+                                                onchange="saveKomisi({{ (int)$data['id'] }}, {{ (int)$month }}, {{ (int)$year }}, this.value)"
+                                            >
+                                            <span class="text-xs text-slate-500">%</span>
+                                        </div>
                                     @else
-                                        <span class="text-slate-400">-</span>
+                                        <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $komisiPercent }}%</span>
                                     @endif
                                 </td>
+
+                                @php
+                                    $komisiValue = isset($data['komisi_value']) ? (float) $data['komisi_value'] : ((($komisiPercent/100) * (float)$data['tagihan_lunas']));
+                                    $tagihanBersih = (float) $komisiValue;
+                                @endphp
+                                <td class="px-4 py-3 align-middle">
+                                    <div class="font-medium text-emerald-600 dark:text-emerald-400">
+                                        Rp {{ number_format($tagihanBersih, 0, ',', '.') }}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 align-middle">
+                                    <div class="font-medium text-orange-600 dark:text-orange-400">
+                                        Rp {{ number_format($data['tagihan_lunas'] - $komisiValue, 0, ',', '.') }}
+                                    </div>
+                                </td>
+
                             </tr>
                         @empty
                             <tr>
@@ -139,16 +172,16 @@
                                 <td class="px-4 py-3 font-bold text-orange-600 dark:text-orange-400">
                                     Rp {{ number_format(array_sum(array_column($operatorData, 'sisa_tagihan')), 0, ',', '.') }}
                                 </td>
-                                <td class="px-4 py-3 text-center">
-                                    @php
-                                        $totalTagihan = array_sum(array_column($operatorData, 'total_tagihan'));
-                                        $totalLunas = array_sum(array_column($operatorData, 'tagihan_lunas'));
-                                        $totalPercentage = $totalTagihan > 0 ? round(($totalLunas / $totalTagihan) * 100, 1) : 0;
-                                    @endphp
-                                    <span class="font-bold text-primary-600 dark:text-primary-400">
-                                        {{ $totalPercentage }}%
-                                    </span>
+                                <td class="px-4 py-3 font-bold text-slate-800 dark:text-white text-center">
+                                    {{ number_format(array_sum(array_column($operatorData, 'komisi_percent')), 0, ',', '.') }} %
                                 </td>
+                                <td class="px-4 py-3 font-bold text-green-600 dark:text-green-400">
+                                    Rp {{ number_format(array_sum(array_column($operatorData, 'komisi_value')), 0, ',', '.') }}
+                                </td>
+                                <td class="px-4 py-3 font-bold text-orange-600 dark:text-orange-400">
+                                    Rp {{ number_format(array_sum(array_column($operatorData, 'tagihan_lunas')) - array_sum(array_column($operatorData, 'komisi_value')), 0, ',', '.') }}
+                                </td>
+
                             </tr>
                         </tfoot>
                     @endif
@@ -165,10 +198,42 @@
 @endpush
 
 @push('scripts')
+    <script>
+        // global: saveKomisi() defined below in DataTables script block
+    </script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.tailwindcss.js"></script>
     <script>
+        async function saveKomisi(operatorId, month, year, komisiPercent) {
+            const form = new FormData();
+            form.append('operator_id', operatorId);
+            form.append('month', month);
+            form.append('year', year);
+            form.append('komisi_percent', komisiPercent);
+
+            try {
+                const resp = await fetch(`{{ route('billing.rekapOperator.komisi') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: form
+                });
+                const data = await resp.json();
+                if (!resp.ok || data.status !== 'success') {
+                    alert(data.message || 'Gagal menyimpan komisi');
+                    return;
+                }
+
+                // Reload agar tagihan bersih & input komisi mengikuti value terbaru
+                location.reload();
+            } catch (e) {
+                alert('Gagal menyimpan komisi');
+            }
+        }
+
         $(document).ready(function () {
             $('#tableRekapOperator').DataTable({
                 responsive: true,
@@ -179,5 +244,6 @@
                 }
             });
         });
+
     </script>
 @endpush

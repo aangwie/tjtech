@@ -105,6 +105,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Rekap Operator
     Route::get('/billing/rekap-operator', [BillingRekapController::class, 'rekapOperator'])->name('billing.rekapOperator');
+    
+    // Simpan komisi operator
+    Route::post('/billing/rekap-operator/komisi', [\App\Http\Controllers\BillingKomisiController::class, 'store'])->name('billing.rekapOperator.komisi');
+
 
     Route::post('/billing/{id}/pay', [BillingController::class, 'processPayment'])->name('billing.pay');
     Route::post('/billing/{id}/pay-ajax', [BillingController::class, 'processPaymentAjax'])->name('billing.payAjax');

@@ -285,6 +285,13 @@ class BillingRekapController extends Controller
 
         $operatorData = [];
 
+        // Ambil komisi yang sudah tersimpan untuk periode ini
+        $komisiMap = \App\Models\TabelKomisi::whereIn('operator_id', $operators->pluck('id'))
+            ->where('month', $month)
+            ->where('year', $year)
+            ->get()
+            ->keyBy('operator_id');
+
         foreach ($operators as $operator) {
             // Get invoices untuk periode ini per operator
             $invoices = Invoice::with('customer')
@@ -294,6 +301,7 @@ class BillingRekapController extends Controller
                     $q->where('operator_id', $operator->id);
                 })
                 ->get();
+
 
             $invoiceIds = $invoices->pluck('id')->toArray();
 
@@ -317,14 +325,21 @@ class BillingRekapController extends Controller
                 $sisaTagihan += $outstanding;
             }
 
+            $komisiRow = $komisiMap->get($operator->id);
+            $komisiPercent = $komisiRow ? (float) $komisiRow->komisi_percent : 0;
+            $komisiValue = $komisiRow ? (float) $komisiRow->komisi_value : round(($komisiPercent / 100) * (float) $tagihanLunas);
+
             $operatorData[] = [
                 'id' => $operator->id,
                 'name' => $operator->name,
                 'total_tagihan' => $totalTagihan,
                 'tagihan_lunas' => $tagihanLunas,
                 'sisa_tagihan' => $sisaTagihan,
+                'komisi_percent' => $komisiPercent,
+                'komisi_value' => $komisiValue,
             ];
         }
+
 
         return view('billing.rekap-operator', compact(
             'month',
