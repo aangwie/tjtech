@@ -61,6 +61,7 @@ class BillingKomisiController extends Controller
 
         $tagihanLunas = BillingPayment::whereIn('invoice_id', $invoiceIds)
             ->where('method', 'manual')
+            ->where('admin_id', $operator->id)
             ->sum('amount');
 
         $komisiValue = round(($komisiPercent / 100) * (float) $tagihanLunas);

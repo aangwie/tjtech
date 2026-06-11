@@ -68,7 +68,7 @@
                                 Total Tagihan</th>
                             <th
                                 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">
-                                Tagihan Lunas</th>
+                                Tagihan Lunas (oleh Operator)</th>
                             <th
                                 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">
                                 Sisa Tagihan</th>
@@ -192,7 +192,7 @@
                         <thead>
                             <tr>
                                 <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-l-lg">Operator</th>
-                                <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-r-lg text-right">Berhasil Ditagih Admin (Rp)</th>
+                                <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-r-lg text-right">Tagihan Operator yang Ditagih Admin (Rp)</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
