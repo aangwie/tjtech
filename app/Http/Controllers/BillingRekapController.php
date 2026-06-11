@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\BillingPayment;
+use App\Models\BalanceTopup;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -198,7 +199,7 @@ class BillingRekapController extends Controller
     public function topUpBalance(Request $request)
     {
         $user = Auth::user();
-        if (!$user->isAdmin() && !$user->isSuperAdmin()) {
+        if (!in_array($user->role, ['admin', 'superadmin'])) {
             return response()->json(['status' => false, 'message' => 'Hanya Admin yang dapat melakukan top-up saldo.'], 403);
         }
 
@@ -242,7 +243,7 @@ class BillingRekapController extends Controller
     public function updateBalance(Request $request)
     {
         $user = Auth::user();
-        if (!$user->isAdmin() && !$user->isSuperAdmin()) {
+        if (!in_array($user->role, ['admin', 'superadmin'])) {
             return response()->json(['status' => false, 'message' => 'Hanya Admin yang dapat mengubah saldo.'], 403);
         }
 
@@ -264,5 +265,72 @@ class BillingRekapController extends Controller
             'status' => true,
             'message' => 'Saldo berhasil diubah menjadi: Rp ' . number_format($customer->balance, 0, ',', '.'),
         ]);
+    }
+
+    /**
+     * Rekap Operator - Tampilkan tagihan per operator untuk admin yang login
+     */
+    public function rekapOperator(Request $request)
+    {
+        $user = Auth::user();
+
+        // Filter bulan & tahun (default: bulan & tahun saat ini)
+        $month = $request->input('month', date('n'));
+        $year = $request->input('year', date('Y'));
+
+        // Get operators yang berada di bawah admin ini
+        $operators = User::where('role', 'operator')
+            ->where('parent_id', $user->id)
+            ->get(['id', 'name']);
+
+        $operatorData = [];
+
+        foreach ($operators as $operator) {
+            // Get invoices untuk periode ini per operator
+            $invoices = Invoice::with('customer')
+                ->whereMonth('due_date', $month)
+                ->whereYear('due_date', $year)
+                ->whereHas('customer', function ($q) use ($operator) {
+                    $q->where('operator_id', $operator->id);
+                })
+                ->get();
+
+            $invoiceIds = $invoices->pluck('id')->toArray();
+
+            // Hitung total tagihan
+            $totalTagihan = 0;
+            foreach ($invoices as $inv) {
+                $price = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
+                $totalTagihan += $price;
+            }
+
+            // Hitung tagihan yang sudah dibayar (manual saja)
+            $tagihanLunas = BillingPayment::whereIn('invoice_id', $invoiceIds)
+                ->where('method', 'manual')
+                ->sum('amount');
+
+            // Hitung tagihan yang belum dibayar
+            $sisaTagihan = 0;
+            foreach ($invoices as $inv) {
+                $price = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
+                $outstanding = max(0, $price - (float) $inv->amount_paid);
+                $sisaTagihan += $outstanding;
+            }
+
+            $operatorData[] = [
+                'id' => $operator->id,
+                'name' => $operator->name,
+                'total_tagihan' => $totalTagihan,
+                'tagihan_lunas' => $tagihanLunas,
+                'sisa_tagihan' => $sisaTagihan,
+            ];
+        }
+
+        return view('billing.rekap-operator', compact(
+            'month',
+            'year',
+            'operators',
+            'operatorData'
+        ));
     }
 }

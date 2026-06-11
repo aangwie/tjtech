@@ -103,6 +103,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/billing/rekap/topup', [BillingRekapController::class, 'topUpBalance'])->name('billing.topup');
     Route::post('/billing/rekap/update-balance', [BillingRekapController::class, 'updateBalance'])->name('billing.updateBalance');
 
+    // Rekap Operator
+    Route::get('/billing/rekap-operator', [BillingRekapController::class, 'rekapOperator'])->name('billing.rekapOperator');
 
     Route::post('/billing/{id}/pay', [BillingController::class, 'processPayment'])->name('billing.pay');
     Route::post('/billing/{id}/pay-ajax', [BillingController::class, 'processPaymentAjax'])->name('billing.payAjax');

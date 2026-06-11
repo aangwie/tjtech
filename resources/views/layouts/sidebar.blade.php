@@ -120,7 +120,7 @@
                         :class="sidebarCollapsed ? 'lg:justify-center lg:px-0' : ''">
                         <span class="flex items-center gap-3">
                             <i
-                                class="fas fa-folder-open w-5 text-center flex-shrink-0 {{ request()->routeIs('customers.*') || request()->routeIs('billing.*') || request()->routeIs('accounting.*') || request()->routeIs('report.*') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
+                                class="fas fa-folder-open w-5 text-center flex-shrink-0 {{ request()->routeIs('customers.*') || request()->routeIs('billing.rekapOperator') || request()->routeIs('billing.*') || request()->routeIs('accounting.*') || request()->routeIs('report.*') ? 'text-[#352f99] dark:text-indigo-400' : 'text-slate-400' }}"></i>
                             <span :class="sidebarCollapsed ? 'lg:hidden' : ''">Manajemen</span>
                         </span>
                         <i class="fas fa-chevron-down text-[10px] text-slate-400 transition-transform duration-200"
@@ -153,6 +153,15 @@
                                 <i class="fas fa-chart-bar w-4 text-center text-xs"></i>
                                 Rekap Tagihan
                             </a>
+
+                            @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
+                            <a href="{{ route('billing.rekapOperator') }}"
+                                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200
+                                                                                                                                                                        {{ request()->routeIs('billing.rekapOperator') ? 'text-[#352f99] dark:text-indigo-300 font-semibold bg-[#352f99]/5' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+                                <i class="fas fa-users w-4 text-center text-xs"></i>
+                                Rekap Operator
+                            </a>
+                            @endif
                         @endif
 
                         @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
