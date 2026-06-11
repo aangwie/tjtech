@@ -15,6 +15,7 @@ class BillingRekapController extends Controller
     {
         $user = Auth::user();
         $selectedAdminId = $request->input('admin_id');
+        $selectedOperatorId = $request->input('operator_id');
 
         // Filter bulan & tahun (default: bulan & tahun saat ini)
         $month = $request->input('month', date('n'));
@@ -34,6 +35,13 @@ class BillingRekapController extends Controller
         } elseif ($user->role == 'superadmin' && $selectedAdminId) {
             $invoiceQuery->whereHas('customer', function ($q) use ($selectedAdminId) {
                 $q->where('admin_id', $selectedAdminId);
+            });
+        }
+
+        // Filter by operator_id (for admin & superadmin)
+        if ($selectedOperatorId && in_array($user->role, ['admin', 'superadmin'])) {
+            $invoiceQuery->whereHas('customer', function ($q) use ($selectedOperatorId) {
+                $q->where('operator_id', $selectedOperatorId);
             });
         }
 
@@ -77,6 +85,13 @@ class BillingRekapController extends Controller
                 $q->where('admin_id', $selectedAdminId);
             });
         }
+
+        // Filter by operator_id for grand total (for admin & superadmin)
+        if ($selectedOperatorId && in_array($user->role, ['admin', 'superadmin'])) {
+            $allUnpaidQuery->whereHas('customer', function ($q) use ($selectedOperatorId) {
+                $q->where('operator_id', $selectedOperatorId);
+            });
+        }
         $allUnpaidInvoices = $allUnpaidQuery->get();
         $grandTotalTagihan = $allUnpaidInvoices->sum(function ($inv) {
             $price = $inv->price > 0 ? $inv->price : ($inv->customer->monthly_price ?? 0);
@@ -92,6 +107,12 @@ class BillingRekapController extends Controller
         } elseif ($user->role == 'superadmin' && $selectedAdminId) {
             $manualPaymentQuery->whereHas('invoice.customer', function ($q) use ($selectedAdminId) {
                 $q->where('admin_id', $selectedAdminId);
+            });
+        }
+        // Filter by operator_id for grand total (for admin & superadmin)
+        if ($selectedOperatorId && in_array($user->role, ['admin', 'superadmin'])) {
+            $manualPaymentQuery->whereHas('invoice.customer', function ($q) use ($selectedOperatorId) {
+                $q->where('operator_id', $selectedOperatorId);
             });
         }
         $grandTotalBayar = (float) $manualPaymentQuery->sum('amount');
@@ -111,6 +132,12 @@ class BillingRekapController extends Controller
                 $q->where('admin_id', $selectedAdminId);
             });
         }
+        // Filter by operator_id for grand total (for admin & superadmin)
+        if ($selectedOperatorId && in_array($user->role, ['admin', 'superadmin'])) {
+            $balancePaymentQuery->whereHas('invoice.customer', function ($q) use ($selectedOperatorId) {
+                $q->where('operator_id', $selectedOperatorId);
+            });
+        }
         $grandTotalDibayarSaldo = (float) $balancePaymentQuery->sum('balance_used')
             + (float) BillingPayment::whereIn('method', ['balance', 'auto_balance'])
                 ->when($user->role == 'operator', function ($q) use ($user) {
@@ -119,12 +146,32 @@ class BillingRekapController extends Controller
                 ->when($user->role == 'superadmin' && $selectedAdminId, function ($q) use ($selectedAdminId) {
                     $q->whereHas('invoice.customer', fn($q2) => $q2->where('admin_id', $selectedAdminId));
                 })
+                ->when($selectedOperatorId && in_array($user->role, ['admin', 'superadmin']), function ($q) use ($selectedOperatorId) {
+                    $q->whereHas('invoice.customer', fn($q2) => $q2->where('operator_id', $selectedOperatorId));
+                })
                 ->where('balance_used', 0)
                 ->sum('amount');
 
         $admins = [];
         if ($user->role == 'superadmin') {
             $admins = User::whereIn('role', ['admin', 'superadmin'])->get(['id', 'name', 'role']);
+        }
+
+        // Build operators list for filter
+        $operators = collect();
+        if ($user->role == 'admin') {
+            // Admin sees their own operators
+            $operators = User::where('role', 'operator')->where('parent_id', $user->id)->get(['id', 'name', 'role']);
+        } elseif ($user->role == 'superadmin') {
+            // Superadmin sees all admins and operators
+            $operatorQuery = User::whereIn('role', ['admin', 'operator']);
+            if ($selectedAdminId) {
+                $operatorQuery->where(function ($q) use ($selectedAdminId) {
+                    $q->where('id', $selectedAdminId)
+                        ->orWhere('parent_id', $selectedAdminId);
+                });
+            }
+            $operators = $operatorQuery->orderBy('role')->orderBy('name')->get(['id', 'name', 'role', 'parent_id']);
         }
 
         return view('billing.rekap', compact(
@@ -139,7 +186,9 @@ class BillingRekapController extends Controller
             'grandTotalBayar',
             'grandTotalDibayarSaldo',
             'admins',
-            'selectedAdminId'
+            'selectedAdminId',
+            'selectedOperatorId',
+            'operators'
         ));
     }
 

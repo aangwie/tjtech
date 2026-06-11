@@ -32,6 +32,17 @@
                         @endforeach
                     </select>
                 @endif
+                @if(in_array(auth()->user()->role, ['admin', 'superadmin']) && $operators->count() > 0)
+                    <select name="operator_id"
+                        class="block w-full sm:w-48 rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6">
+                        <option value="">Semua Operator</option>
+                        @foreach($operators as $op)
+                            <option value="{{ $op->id }}" {{ ($selectedOperatorId ?? '') == $op->id ? 'selected' : '' }}>
+                                {{ $op->name }} ({{ ucfirst($op->role) }})
+                            </option>
+                        @endforeach
+                    </select>
+                @endif
                 <select name="month"
                     class="block w-full sm:w-40 rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6">
                     @for ($i = 1; $i <= 12; $i++)
