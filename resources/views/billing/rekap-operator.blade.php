@@ -186,31 +186,60 @@
                     @endif
                 </table>
 
-                <!-- Tabel baru: ditagih oleh operator tapi berhasil ditagih admin -->
-                <div class="mt-6 overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr>
-                                <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-l-lg">Operator</th>
-                                <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-r-lg text-right">Tagihan Operator yang Ditagih Admin (Rp)</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-                            @forelse($operatorSuccessTable ?? [] as $row)
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
-                                    <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ $row['operator_name'] }}</td>
-                                    <td class="px-4 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">Rp {{ number_format((float)$row['tagihan_berhasil_ditagih_admin'], 0, ',', '.') }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
-                                        Tidak ada data.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+            </div>
+        </div>
+
+        <!-- Tabel 2 (dipisahkan dalam card berbeda) -->
+        <div
+            class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700/50 overflow-hidden mt-6">
+            <div class="overflow-x-auto p-4">
+                <div class="mb-3">
+                    <h5 class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Pelanggan milik operator ditagih admin
+                    </h5>
                 </div>
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr>
+                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-l-lg">No</th>
+                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">Nama Operator</th>
+                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">Total Tagihan</th>
+                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">Tagihan Lunas (oleh Operator)</th>
+                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50">Sisa Tagihan</th>
+                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 rounded-r-lg text-center">Komisi (%)</th>
+                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 text-center">Komisi (Rp.)</th>
+                            <th class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider py-3 px-4 bg-slate-50 dark:bg-slate-700/50 text-center">DiTagih Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @forelse($operatorSuccessTable ?? [] as $row)
+                            @php
+                                $opData = collect($operatorData ?? [])->firstWhere('id', $row['operator_id']);
+                                $totalTagihan = (float) ($opData['total_tagihan'] ?? 0);
+                                $tagihanLunasOperator = (float) ($opData['tagihan_lunas'] ?? 0);
+                                $sisaTagihan = (float) ($opData['sisa_tagihan'] ?? 0);
+                                $komisiPercent = (float) ($opData['komisi_percent'] ?? 0);
+                                $komisiValue = (float) ($opData['komisi_value'] ?? round(($komisiPercent / 100) * $tagihanLunasOperator));
+                            @endphp
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+                                <td class="px-4 py-3 align-middle text-sm text-slate-600 dark:text-slate-300">{{ $loop->iteration }}</td>
+                                <td class="px-4 py-3 align-middle"><div class="font-medium text-slate-900 dark:text-white">{{ $row['operator_name'] }}</div></td>
+                                <td class="px-4 py-3 align-middle font-medium text-slate-700 dark:text-slate-200">Rp {{ number_format($totalTagihan, 0, ',', '.') }}</td>
+                                <td class="px-4 py-3 align-middle"><div class="font-medium text-green-600 dark:text-green-400">Rp {{ number_format($tagihanLunasOperator, 0, ',', '.') }}</div></td>
+                                <td class="px-4 py-3 align-middle"><div class="font-medium text-orange-600 dark:text-orange-400">Rp {{ number_format($sisaTagihan, 0, ',', '.') }}</div></td>
+                                <td class="px-4 py-3 align-middle text-center">{{ number_format($komisiPercent, 0, ',', '.') }}%</td>
+                                <td class="px-4 py-3 align-middle"><div class="font-medium text-emerald-600 dark:text-emerald-400">Rp {{ number_format($komisiValue, 0, ',', '.') }}</div></td>
+                                <td class="px-4 py-3 align-middle"><div class="font-medium text-orange-600 dark:text-orange-400">Rp {{ number_format((float) $row['tagihan_berhasil_ditagih_admin'], 0, ',', '.') }}</div></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">Tidak ada data.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
             </div>
         </div>
 
