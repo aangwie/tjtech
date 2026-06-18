@@ -215,7 +215,10 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-            // Cloudflare Turnstile Validation (hanya jika diaktifkan, aturan akan skip jika nonaktif)
+        ]);
+
+        // Validasi Turnstile terpisah (jangan gabung dengan $credentials agar tidak ikut query ke database)
+        $request->validate([
             'cf-turnstile-response' => [new TurnstileCheck],
         ]);
 
