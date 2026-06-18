@@ -23,7 +23,19 @@ class SiteSettingController extends Controller
     public function update(Request $request)
     {
         $setting = SiteSetting::first();
-        $setting->update($request->only(['about_us', 'terms_conditions', 'connection_mode']));
+
+        $request->validate([
+            'turnstile_site_key' => 'nullable|string|max:255',
+            'turnstile_secret_key' => 'nullable|string|max:255',
+        ]);
+
+        $setting->update($request->only([
+            'about_us',
+            'terms_conditions',
+            'connection_mode',
+            'turnstile_site_key',
+            'turnstile_secret_key',
+        ]));
 
         return back()->with('success', 'Informasi situs berhasil diperbarui.');
     }

@@ -3,6 +3,7 @@
 namespace App\Rules;
 
 use Closure;
+use App\Models\SiteSetting;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Http;
 
@@ -18,8 +19,12 @@ class TurnstileCheck implements ValidationRule
             return;
         }
 
+        // Ambil secret key dari database, fallback ke config
+        $setting = SiteSetting::first();
+        $secretKey = $setting?->turnstile_secret_key ?: config('turnstile.secret_key');
+
         $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-            'secret' => config('turnstile.secret_key'),
+            'secret' => $secretKey,
             'response' => $value,
             'remoteip' => request()->ip(),
         ]);

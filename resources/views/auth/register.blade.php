@@ -163,8 +163,17 @@
                     <!-- Honeypot: Timestamp untuk mendeteksi submit terlalu cepat -->
                     <input type="hidden" name="hp_time" value="{{ time() }}">
 
+                    @php
+                        $turnstileSiteKey = null;
+                        try {
+                            $siteSetting = \App\Models\SiteSetting::first();
+                            $turnstileSiteKey = $siteSetting?->turnstile_site_key ?: config('turnstile.site_key');
+                        } catch (\Exception $e) {
+                            $turnstileSiteKey = config('turnstile.site_key');
+                        }
+                    @endphp
                     <!-- Cloudflare Turnstile Widget -->
-                    <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}" data-theme="auto"></div>
+                    <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}" data-theme="auto"></div>
 
                     <div class="pt-2">
                         <button type="submit"

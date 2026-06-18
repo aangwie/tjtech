@@ -85,6 +85,33 @@
                     }
                 </style>
 
+                <!-- Cloudflare Turnstile Section -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                                <i class="fas fa-shield-halved"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-900 dark:text-white">Cloudflare Turnstile</h3>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 mb-2">Site Key</label>
+                            <input type="text" name="turnstile_site_key" value="{{ $setting->turnstile_site_key }}"
+                                class="block w-full rounded-xl border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-primary-500 focus:border-primary-500 transition-all font-mono text-sm"
+                                placeholder="0x4AAAAAA...">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-500 mb-2">Secret Key</label>
+                            <input type="password" name="turnstile_secret_key" value="{{ $setting->turnstile_secret_key }}"
+                                class="block w-full rounded-xl border-slate-300 dark:bg-slate-700 dark:border-slate-600 dark:text-white focus:ring-primary-500 focus:border-primary-500 transition-all font-mono text-sm"
+                                placeholder="0x4AAAAAA...">
+                            <p class="mt-1 text-xs text-slate-400">Dapatkan Site Key dan Secret Key dari <a href="https://dash.cloudflare.com/sign-up" target="_blank" class="text-primary-600 hover:underline">Cloudflare Dashboard</a> &raquo; Turnstile.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Terms & Conditions Section -->
                 <div
                     class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
