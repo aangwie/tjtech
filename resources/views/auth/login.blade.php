@@ -24,6 +24,9 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
     <!-- Tailwind & Alpine -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
@@ -157,6 +160,32 @@
 
                 <form class="space-y-6" action="{{ route('login.post') }}" method="POST">
                     @csrf
+                    <!-- Honeypot: Field tersembunyi untuk menjebak bot -->
+                    <div style="position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden;" aria-hidden="true">
+                        <label for="hp_website">Website</label>
+                        <input id="hp_website" name="hp_website" type="text" tabindex="-1" autocomplete="off" value="">
+                    </div>
+
+                    <!-- Honeypot: Timestamp untuk mendeteksi submit terlalu cepat -->
+                    <input type="hidden" name="hp_time" value="{{ time() }}">
+
+                    @php
+                        $turnstileSiteKey = null;
+                        try {
+                            $siteSetting = \App\Models\SiteSetting::first();
+                            $turnstileSiteKey = $siteSetting?->turnstile_site_key ?: config('turnstile.site_key');
+                            $turnstileEnabled = $siteSetting?->turnstile_enabled ?? false;
+                        } catch (\Exception $e) {
+                            $turnstileSiteKey = config('turnstile.site_key');
+                            $turnstileEnabled = false;
+                        }
+                    @endphp
+
+                    @if($turnstileEnabled)
+                    <!-- Cloudflare Turnstile Widget -->
+                    <div class="cf-turnstile flex justify-center" data-sitekey="{{ $turnstileSiteKey }}" data-theme="auto"></div>
+                    @endif
+
                     <div>
                         <label for="email"
                             class="block text-sm font-semibold leading-6 text-slate-900 dark:text-white">Email

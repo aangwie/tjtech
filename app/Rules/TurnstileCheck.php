@@ -14,13 +14,21 @@ class TurnstileCheck implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
+        // Cek apakah Turnstile diaktifkan dari database
+        $setting = SiteSetting::first();
+        $turnstileEnabled = $setting?->turnstile_enabled ?? false;
+
+        // Jika Turnstile tidak diaktifkan, skip validasi
+        if (!$turnstileEnabled) {
+            return;
+        }
+
         if (empty($value)) {
             $fail('Verifikasi Turnstile gagal. Silakan coba lagi.');
             return;
         }
 
         // Ambil secret key dari database, fallback ke config
-        $setting = SiteSetting::first();
         $secretKey = $setting?->turnstile_secret_key ?: config('turnstile.secret_key');
 
         $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [

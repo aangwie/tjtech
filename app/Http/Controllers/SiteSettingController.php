@@ -27,15 +27,21 @@ class SiteSettingController extends Controller
         $request->validate([
             'turnstile_site_key' => 'nullable|string|max:255',
             'turnstile_secret_key' => 'nullable|string|max:255',
+            'turnstile_enabled' => 'nullable|in:0,1,on,off,true,false',
         ]);
 
-        $setting->update($request->only([
+        $data = $request->only([
             'about_us',
             'terms_conditions',
             'connection_mode',
             'turnstile_site_key',
             'turnstile_secret_key',
-        ]));
+        ]);
+
+        // Handle boolean toggle
+        $data['turnstile_enabled'] = $request->boolean('turnstile_enabled', false);
+
+        $setting->update($data);
 
         return back()->with('success', 'Informasi situs berhasil diperbarui.');
     }

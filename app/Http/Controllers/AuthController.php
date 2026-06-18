@@ -195,10 +195,28 @@ class AuthController extends Controller
     // 2. Proses Login
     public function login(Request $request)
     {
+        // --- Honeypot Check ---
+        // Jika field hp_website terisi, berarti bot
+        if (!empty($request->hp_website)) {
+            // Jangan beritahu bot kalau ketahuan, cukup redirect sukses palsu
+            return redirect()->route('login')->with('success', 'Login berhasil! Selamat datang kembali.');
+        }
+
+        // Jika field hp_time terisi terlalu cepat (< 3 detik), kemungkinan bot
+        if (!empty($request->hp_time)) {
+            $submittedAt = Carbon::createFromTimestamp($request->hp_time);
+            $now = Carbon::now();
+            if ($submittedAt->diffInSeconds($now) < 3) {
+                return redirect()->route('login')->with('success', 'Login berhasil! Selamat datang kembali.');
+            }
+        }
+
         // Validasi input
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
+            // Cloudflare Turnstile Validation (hanya jika diaktifkan, aturan akan skip jika nonaktif)
+            'cf-turnstile-response' => [new TurnstileCheck],
         ]);
 
         // Cek ke database (users table)

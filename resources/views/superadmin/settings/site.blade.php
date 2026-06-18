@@ -96,6 +96,23 @@
                         </div>
                     </div>
                     <div class="p-6 space-y-4">
+                        <!-- Toggle Enable/Disable Turnstile -->
+                        <div class="flex items-center justify-between py-3 px-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                            <div class="flex items-center gap-3">
+                                <div class="h-9 w-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                                    <i class="fas fa-toggle-on"></i>
+                                </div>
+                                <div>
+                                    <span class="block text-sm font-bold text-slate-900 dark:text-white">Aktifkan Cloudflare Turnstile</span>
+                                    <span class="block text-xs text-slate-500">Lindungi halaman Login dan Register dari serangan bot</span>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="turnstile_enabled" class="sr-only peer" value="1" {{ $setting->turnstile_enabled ? 'checked' : '' }}>
+                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-500 peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-slate-500 mb-2">Site Key</label>
                             <input type="text" name="turnstile_site_key" value="{{ $setting->turnstile_site_key }}"
