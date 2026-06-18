@@ -24,6 +24,9 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
     <!-- Tailwind & Alpine -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
@@ -150,6 +153,18 @@
                                 placeholder="••••••">
                         </div>
                     </div>
+
+                    <!-- Honeypot: Field tersembunyi untuk menjebak bot -->
+                    <div style="position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden;" aria-hidden="true">
+                        <label for="hp_website">Website</label>
+                        <input id="hp_website" name="hp_website" type="text" tabindex="-1" autocomplete="off" value="">
+                    </div>
+
+                    <!-- Honeypot: Timestamp untuk mendeteksi submit terlalu cepat -->
+                    <input type="hidden" name="hp_time" value="{{ time() }}">
+
+                    <!-- Cloudflare Turnstile Widget -->
+                    <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}" data-theme="auto"></div>
 
                     <div class="pt-2">
                         <button type="submit"

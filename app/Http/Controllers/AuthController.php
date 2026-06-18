@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
+use App\Rules\TurnstileCheck;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -32,10 +34,28 @@ class AuthController extends Controller
     // 5. Proses Register
     public function register(Request $request)
     {
+        // --- Honeypot Check ---
+        // Jika field hp_website terisi, berarti bot
+        if (!empty($request->hp_website)) {
+            // Jangan beritahu bot kalau ketahuan, cukup redirect sukses palsu
+            return redirect()->route('login')->with('success', 'Registrasi berhasil! Silakan cek email Anda untuk verifikasi akun sebelum login.');
+        }
+
+        // Jika field hp_time terisi terlalu cepat (< 3 detik), kemungkinan bot
+        if (!empty($request->hp_time)) {
+            $submittedAt = Carbon::createFromTimestamp($request->hp_time);
+            $now = Carbon::now();
+            if ($submittedAt->diffInSeconds($now) < 3) {
+                return redirect()->route('login')->with('success', 'Registrasi berhasil! Silakan cek email Anda untuk verifikasi akun sebelum login.');
+            }
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
+            // Cloudflare Turnstile Validation
+            'cf-turnstile-response' => ['required', new TurnstileCheck],
         ]);
 
         $user = User::create([
