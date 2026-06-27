@@ -396,6 +396,113 @@ class WhatsappController extends Controller
         ]);
     }
 
+    // Schedule unpaid batch broadcast (batch + interval)
+    public function scheduleUnpaidBatch(Request $request)
+    {
+        $request->validate([
+            'message' => 'required|string',
+            'target_mode' => 'required|in:all,partial',
+            'batch_size' => 'required_if:target_mode,partial|nullable|integer|in:5,10,15,20,25',
+            'interval_minutes' => 'required_if:target_mode,partial|nullable|integer|in:5,10,15,20',
+            'start_time' => 'required_if:target_mode,partial|nullable|date',
+            'admin_id' => 'nullable|integer|exists:users,id',
+            'operator_id' => 'nullable|integer|exists:users,id',
+        ]);
+
+        $user = auth()->user();
+        $message = $request->message;
+
+        // Get unpaid customer IDs
+        $query = Customer::whereNotNull('phone')
+            ->where('phone', '!=', '');
+
+        if ($user->role == 'superadmin' && $request->admin_id) {
+            $query->where('admin_id', $request->admin_id);
+        }
+        if ($request->operator_id) {
+            $query->where('operator_id', $request->operator_id);
+        }
+
+        $query->whereHas('invoices', function ($q) {
+            $q->where('status', '!=', 'paid');
+        });
+
+        $allCustomerIds = $query->pluck('id')->toArray();
+
+        if (empty($allCustomerIds)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tidak ada pelanggan dengan tagihan unpaid.'
+            ], 400);
+        }
+
+        // Mode: ALL - single schedule or immediate
+        if ($request->target_mode === 'all') {
+            $scheduledMessage = ScheduledMessage::create([
+                'admin_id' => $user->id,
+                'message' => $message,
+                'customer_ids' => $allCustomerIds,
+                'whatsapp_age' => '12+',
+                'scheduled_at' => now()->addMinute(),
+                'status' => 'pending',
+                'total_count' => count($allCustomerIds),
+                'batch_number' => 1,
+                'total_batches' => 1,
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'mode' => 'all',
+                'scheduled_message_id' => $scheduledMessage->id,
+                'total' => count($allCustomerIds),
+                'message' => 'Broadcast unpaid akan diproses dalam 1 menit.'
+            ]);
+        }
+
+        // Mode: PARTIAL - split into batches
+        $batchSize = (int) $request->batch_size;
+        $intervalMinutes = (int) $request->interval_minutes;
+        $startTime = Carbon::parse($request->start_time);
+
+        $batches = array_chunk($allCustomerIds, $batchSize);
+        $totalBatches = count($batches);
+
+        $createdSchedules = [];
+
+        foreach ($batches as $batchIndex => $batchIds) {
+            $batchTime = $startTime->copy()->addMinutes($batchIndex * $intervalMinutes);
+
+            $scheduledMessage = ScheduledMessage::create([
+                'admin_id' => $user->id,
+                'message' => $message,
+                'customer_ids' => $batchIds,
+                'whatsapp_age' => '12+',
+                'scheduled_at' => $batchTime,
+                'status' => 'pending',
+                'total_count' => count($batchIds),
+                'batch_number' => $batchIndex + 1,
+                'total_batches' => $totalBatches,
+            ]);
+
+            $createdSchedules[] = [
+                'id' => $scheduledMessage->id,
+                'batch' => $batchIndex + 1,
+                'total_batches' => $totalBatches,
+                'scheduled_at' => $batchTime->format('d M Y H:i'),
+                'count' => count($batchIds),
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'mode' => 'partial',
+            'batches' => $createdSchedules,
+            'total_batches' => $totalBatches,
+            'total_customers' => count($allCustomerIds),
+            'message' => "Berhasil membuat {$totalBatches} jadwal broadcast dengan interval {$intervalMinutes} menit."
+        ]);
+    }
+
     // Update scheduled message progress (called by AJAX during immediate broadcast)
     public function updateBroadcastProgress(Request $request)
     {

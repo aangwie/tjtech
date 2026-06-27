@@ -305,6 +305,10 @@
                                 previewContent: '',
                                 showSaveForm: false,
                                 templateName: '',
+                                targetMode: 'all',
+                                batchSize: '10',
+                                intervalMinutes: '10',
+                                startTime: '',
                                 selectTemplate(id) {
                                     this.selectedTemplateId = id;
                                     if (id) {
@@ -451,10 +455,75 @@
                                 </div>
                             </div>
 
+                            {{-- Target Mode Selection --}}
+                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                                <label class="block text-sm font-bold text-slate-900 mb-3">
+                                    <i class="fas fa-bullseye mr-2 text-amber-500"></i>Kirim ke
+                                </label>
+                                <div class="flex gap-4">
+                                    <label class="flex items-center cursor-pointer group">
+                                        <input type="radio" x-model="targetMode" value="all"
+                                            class="w-4 h-4 text-amber-600 border-slate-300 focus:ring-amber-500">
+                                        <span class="ml-2 text-sm font-medium text-slate-700 group-hover:text-amber-600">
+                                            Semua Pelanggan
+                                        </span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer group">
+                                        <input type="radio" x-model="targetMode" value="partial"
+                                            class="w-4 h-4 text-amber-600 border-slate-300 focus:ring-amber-500">
+                                        <span class="ml-2 text-sm font-medium text-slate-700 group-hover:text-amber-600">
+                                            Sebagian (Batch)
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {{-- Batch Options (show when partial is selected) --}}
+                            <div x-show="targetMode === 'partial'" x-transition class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-1">
+                                            <i class="fas fa-layer-group mr-1 text-indigo-500"></i>Jumlah per Batch
+                                        </label>
+                                        <select x-model="batchSize"
+                                            class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                            <option value="5">5 Pelanggan</option>
+                                            <option value="10" selected>10 Pelanggan</option>
+                                            <option value="15">15 Pelanggan</option>
+                                            <option value="20">20 Pelanggan</option>
+                                            <option value="25">25 Pelanggan</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold text-slate-900 mb-1">
+                                            <i class="fas fa-hourglass-half mr-1 text-emerald-500"></i>Jeda Waktu
+                                        </label>
+                                        <select x-model="intervalMinutes"
+                                            class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                            <option value="5">5 Menit</option>
+                                            <option value="10" selected>10 Menit</option>
+                                            <option value="15">15 Menit</option>
+                                            <option value="20">20 Menit</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-900 mb-1">
+                                        <i class="fas fa-clock mr-1 text-purple-500"></i>Waktu Mulai
+                                    </label>
+                                    <input type="datetime-local" x-model="startTime"
+                                        class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        <i class="fas fa-info-circle mr-1"></i>Batch 1 akan dikirim pada waktu ini, batch berikutnya sesuai jeda.
+                                    </p>
+                                </div>
+                            </div>
+
                             {{-- Broadcast Button --}}
-                            <button onclick="prepareBroadcast('unpaid')"
+                            <button onclick="prepareBatchUnpaid()"
                                 class="w-full inline-flex justify-center items-center rounded-lg bg-amber-500 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-amber-600 hover:shadow-md transition-all">
-                                <i class="fab fa-whatsapp mr-2 text-lg"></i> Mulai Broadcast Reminder
+                                <i class="fab fa-whatsapp mr-2 text-lg"></i> 
+                                <span x-text="targetMode === 'all' ? 'Mulai Broadcast Reminder' : 'Jadwalkan Batch Broadcast'"></span>
                             </button>
                         </div>
                     </div>
@@ -680,12 +749,18 @@
                                                 @endif
                                             </td>
                                             <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                                                <div class="flex flex-col">
+                                                <div class="flex flex-col gap-1">
                                                     <span
                                                         class="inline-flex items-center w-fit rounded-md bg-indigo-50 px-2 py-1 text-xs font-bold text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
                                                         <i class="fas fa-users mr-1"></i> {{ $msg->total_count }} Nomor
                                                     </span>
-                                                    <span class="text-[10px] text-slate-400 mt-1 font-medium">Age:
+                                                    @if($msg->batch_number && $msg->total_batches)
+                                                        <span
+                                                            class="inline-flex items-center w-fit rounded-md bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                                                            <i class="fas fa-layer-group mr-1"></i> Batch {{ $msg->batch_number }}/{{ $msg->total_batches }}
+                                                        </span>
+                                                    @endif
+                                                    <span class="text-[10px] text-slate-400 font-medium">Age:
                                                         <span class="text-indigo-600">{{ $msg->whatsapp_age }}</span></span>
                                                 </div>
                                             </td>
@@ -1318,6 +1393,118 @@
                         title: 'Error',
                         text: errorMsg
                     });
+                });
+        }
+
+        // Batch Unpaid Broadcast Function (calls scheduleUnpaidBatch endpoint)
+        function prepareBatchUnpaid() {
+            const tab = document.querySelector('[x-show="activeTab === \'unpaid\'"]');
+            if (!tab) return;
+            const data = Alpine.$data(tab);
+
+            const message = $('#msgUnpaid').val().trim();
+            if (!message) {
+                Swal.fire({ icon: 'error', title: 'Pesan Kosong', text: 'Silakan masukkan isi pesan terlebih dahulu.' });
+                return;
+            }
+
+            // Validation for partial mode
+            if (data.targetMode === 'partial') {
+                if (!data.startTime) {
+                    Swal.fire({ icon: 'error', title: 'Waktu Mulai Kosong', text: 'Silakan pilih waktu mulai untuk batch pertama.' });
+                    return;
+                }
+                // Validate start time is in the future
+                const startDate = new Date(data.startTime);
+                if (startDate <= new Date()) {
+                    Swal.fire({ icon: 'error', title: 'Waktu Mulai Tidak Valid', text: 'Waktu mulai harus lebih dari sekarang.' });
+                    return;
+                }
+            }
+
+            // Confirmation dialog
+            let confirmText = data.targetMode === 'all'
+                ? 'Broadcast tagihan unpaid ke SEMUA pelanggan yang belum bayar.'
+                : `Batch broadcast ke ${data.batchSize} pelanggan per batch, jeda ${data.intervalMinutes} menit, mulai ${data.startTime}.`;
+
+            Swal.fire({
+                title: data.targetMode === 'all' ? 'Mulai Broadcast?' : 'Jadwalkan Batch Broadcast?',
+                text: confirmText,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: data.targetMode === 'all' ? '#4f46e5' : '#d97706',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: data.targetMode === 'all' ? 'Ya, Mulai' : 'Ya, Jadwalkan',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    processUnpaidBatch(data, message);
+                }
+            });
+        }
+
+        function processUnpaidBatch(data, message) {
+            Swal.fire({
+                title: 'Memproses...',
+                text: 'Menyiapkan jadwal broadcast',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            const requestData = {
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                message: message,
+                target_mode: data.targetMode,
+                batch_size: data.batchSize,
+                interval_minutes: data.intervalMinutes,
+                start_time: data.startTime || null,
+                admin_id: $('#unpaidAdminFilter').val() || null,
+                operator_id: $('#unpaidOperatorFilter').val() || null,
+            };
+
+            $.post("{{ route('whatsapp.unpaid.batch') }}", requestData)
+                .done(function (response) {
+                    Swal.close();
+                    if (response.status) {
+                        if (response.mode === 'all') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Broadcast Dijadwalkan!',
+                                html: `<p>Broadcast unpaid akan diproses dalam 1 menit.</p><p class="text-sm text-gray-500">Total: ${response.total} penerima</p>`,
+                                confirmButtonColor: '#4f46e5'
+                            }).then(() => location.reload());
+                        } else {
+                            // Partial mode - show batch summary
+                            let batchListHtml = '';
+                            response.batches.forEach(function(b) {
+                                batchListHtml += `<div class="flex justify-between text-sm py-1 border-b border-slate-100">
+                                    <span class="font-medium text-indigo-600">Batch ${b.batch}/${b.total_batches}</span>
+                                    <span>${b.count} penerima</span>
+                                    <span class="text-xs text-slate-500">${b.scheduled_at}</span>
+                                </div>`;
+                            });
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Batch Broadcast Dijadwalkan!',
+                                html: `
+                                    <p class="mb-3">${response.message}</p>
+                                    <div class="bg-slate-50 rounded-lg p-3 max-h-48 overflow-y-auto">
+                                        ${batchListHtml}
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-2">Total: ${response.total_customers} pelanggan dalam ${response.total_batches} batch</p>
+                                `,
+                                confirmButtonColor: '#d97706'
+                            }).then(() => location.reload());
+                        }
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Gagal', text: response.message || 'Terjadi kesalahan.' });
+                    }
+                })
+                .fail(function (xhr) {
+                    Swal.close();
+                    let msg = 'Terjadi kesalahan server.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                    Swal.fire({ icon: 'error', title: 'Error', text: msg });
                 });
         }
 

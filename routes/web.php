@@ -158,6 +158,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/whatsapp/broadcast/targets', [WhatsappController::class, 'getBroadcastTargets'])->name('whatsapp.broadcast.targets');
         Route::get('/whatsapp/customers', [WhatsappController::class, 'getCustomersForBroadcast'])->name('whatsapp.customers');
         Route::post('/whatsapp/broadcast/schedule', [WhatsappController::class, 'scheduleBroadcast'])->name('whatsapp.broadcast.schedule');
+        Route::post('/whatsapp/unpaid-batch', [WhatsappController::class, 'scheduleUnpaidBatch'])->name('whatsapp.unpaid.batch');
         Route::post('/whatsapp/broadcast/progress', [WhatsappController::class, 'updateBroadcastProgress'])->name('whatsapp.broadcast.progress');
         Route::delete('/whatsapp/broadcast/schedule/{id}', [WhatsappController::class, 'destroyScheduled'])->name('whatsapp.broadcast.schedule.destroy');
         // Route Helper Gateway (Essential only)
