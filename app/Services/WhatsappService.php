@@ -7,22 +7,89 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsappService
 {
-    public static function send($targetNumber, $message, $adminId = null)
+    /**
+     * Helper to check if a WhatsappSetting model instance is properly configured
+     */
+    private static function isSettingConfigured($setting)
     {
-        // 1. Ambil Pengaturan dari Database (Dukung spesifik tenant adminId)
-        $setting = null;
+        if (!$setting) {
+            return false;
+        }
+
+        if ($setting->wa_provider === 'gateway') {
+            return !empty($setting->wa_gateway_url);
+        }
+
+        // Default: 'api' provider
+        return !empty($setting->api_key) && !empty($setting->target_url);
+    }
+
+    /**
+     * Helper to get the best valid WhatsappSetting
+     */
+    private static function resolveSetting($adminId = null)
+    {
+        // 1. Coba ambil berdasarkan admin_id pelanggan (jika ada)
         if ($adminId) {
             $setting = WhatsappSetting::withoutGlobalScopes()->where('admin_id', $adminId)->first();
+            if (self::isSettingConfigured($setting)) {
+                return $setting;
+            }
         }
-        if (!$setting) {
-            $setting = WhatsappSetting::first();
+
+        // 2. Coba ambil berdasarkan tenant scope user yang sedang login
+        $setting = WhatsappSetting::first();
+        if (self::isSettingConfigured($setting)) {
+            return $setting;
         }
-        if (!$setting) {
-            $setting = WhatsappSetting::withoutGlobalScopes()->first();
+
+        // 3. Fallback: Cari setting manapun di database yang sudah memiliki konfigurasi valid
+        $setting = WhatsappSetting::withoutGlobalScopes()
+            ->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('wa_provider', 'gateway')
+                        ->whereNotNull('wa_gateway_url')
+                        ->where('wa_gateway_url', '!=', '');
+                })->orWhere(function ($sub) {
+                    $sub->where(function ($p) {
+                        $p->where('wa_provider', 'api')
+                          ->orWhereNull('wa_provider');
+                    })
+                    ->whereNotNull('api_key')
+                    ->where('api_key', '!=', '')
+                    ->whereNotNull('target_url')
+                    ->where('target_url', '!=', '');
+                });
+            })
+            ->first();
+
+        if (self::isSettingConfigured($setting)) {
+            return $setting;
         }
+
+        // 4. Terakhir: kembalikan record WhatsappSetting manapun jika ada
+        return WhatsappSetting::withoutGlobalScopes()->first();
+    }
+
+    public static function send($targetNumber, $message, $adminId = null)
+    {
+        // 1. Ambil Pengaturan dari Database (Dukung fallback otomatis jika setting adminId belum terisi API Key)
+        $setting = self::resolveSetting($adminId);
 
         if (!$setting) {
             return ['status' => false, 'message' => 'Pengaturan WhatsApp belum dikonfigurasi.'];
+        }
+
+        if (!self::isSettingConfigured($setting)) {
+            if ($setting->wa_provider === 'gateway' && empty($setting->wa_gateway_url)) {
+                return ['status' => false, 'message' => 'URL Gateway WhatsApp belum diisi pada pengaturan.'];
+            }
+            if (empty($setting->api_key)) {
+                return ['status' => false, 'message' => 'API Key WhatsApp belum diisi pada pengaturan.'];
+            }
+            if (empty($setting->target_url)) {
+                return ['status' => false, 'message' => 'Target URL API WhatsApp belum diisi pada pengaturan.'];
+            }
         }
 
         // 2. Format Nomor (Pastikan 628...)
