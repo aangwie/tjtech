@@ -12,6 +12,7 @@ use App\Services\MikrotikService;
 use App\Services\WhatsappService; // 1. Import Service WA
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class BillingController extends Controller
@@ -698,11 +699,12 @@ class BillingController extends Controller
                 $this->enableMikrotik($customer->pppoe_username);
 
                 // Send WA notification
-                $this->sendPaymentNotification($invoice, $customer, $remainingToPay, 'balance');
+                $waRes = $this->sendPaymentNotification($invoice, $customer, $remainingToPay, 'balance', true);
+                $waText = isset($waRes['status']) && $waRes['status'] ? ' (WA Terkirim)' : (isset($waRes['message']) ? ' (WA Gagal: ' . $waRes['message'] . ')' : '');
 
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Pembayaran via saldo berhasil. Sisa saldo: Rp ' . number_format($customer->balance, 0, ',', '.'),
+                    'message' => 'Pembayaran via saldo berhasil.' . $waText . ' Sisa saldo: Rp ' . number_format($customer->balance, 0, ',', '.'),
                     'customer' => $customer->name,
                 ]);
 
@@ -740,10 +742,14 @@ class BillingController extends Controller
                         'notes' => 'Pembayaran sebagian oleh ' . Auth::user()->name,
                     ]);
 
+                    // Send WA notification for partial payment
+                    $waRes = $this->sendPaymentNotification($invoice, $customer, $amountPaid, 'manual', false);
+                    $waText = isset($waRes['status']) && $waRes['status'] ? ' (WA Terkirim)' : (isset($waRes['message']) ? ' (WA Gagal: ' . $waRes['message'] . ')' : '');
+
                     // Process arrears payments (Opsi B: separate amount per arrear)
                     $arrearsResult = $this->processArrearsPayments($request, $customer);
 
-                    $msg = 'Pembayaran sebagian diterima. Kurang bayar: Rp ' . number_format($underpayment, 0, ',', '.');
+                    $msg = 'Pembayaran sebagian diterima. Kurang bayar: Rp ' . number_format($underpayment, 0, ',', '.') . $waText;
                     if ($arrearsResult) {
                         $msg .= '. ' . $arrearsResult;
                     }
@@ -798,12 +804,13 @@ class BillingController extends Controller
                     ]);
 
                     $this->enableMikrotik($customer->pppoe_username);
-                    $this->sendPaymentNotification($invoice, $customer, $amountPaid, 'manual');
+                    $waRes = $this->sendPaymentNotification($invoice, $customer, $amountPaid, 'manual', true);
+                    $waText = isset($waRes['status']) && $waRes['status'] ? ' (WA Terkirim)' : (isset($waRes['message']) ? ' (WA Gagal: ' . $waRes['message'] . ')' : '');
 
                     // Process arrears payments (Opsi B: separate amount per arrear)
                     $arrearsResult = $this->processArrearsPayments($request, $customer);
 
-                    $msg = 'Pembayaran lunas berhasil.';
+                    $msg = 'Pembayaran lunas berhasil.' . $waText;
                     if ($excessToBalance > 0) {
                         $msg .= ' Kelebihan Rp ' . number_format($excessToBalance, 0, ',', '.') . ' ditambahkan ke saldo.';
                     }
@@ -1134,7 +1141,7 @@ class BillingController extends Controller
     /**
      * Helper: Send WA payment notification
      */
-    private function sendPaymentNotification($invoice, $customer, $amountPaid, $method)
+    private function sendPaymentNotification($invoice, $customer, $amountPaid, $method, $isFullPayment = true)
     {
         try {
             if (!empty($customer->phone)) {
@@ -1143,6 +1150,7 @@ class BillingController extends Controller
                 $periode = Carbon::parse($invoice->due_date)->locale('id')->isoFormat('MMMM Y');
                 $linkDownload = route('frontend.invoice', $invoice->id);
                 $metodeTeks = $method === 'balance' ? 'Saldo' : 'Manual';
+                $statusTeks = $isFullPayment ? 'LUNAS' : 'SEBAGIAN';
 
                 $text = "*PEMBAYARAN DITERIMA*\n\n";
                 $text .= "Halo {$customer->name},\n";
@@ -1151,15 +1159,29 @@ class BillingController extends Controller
                 $text .= "💰 Nominal: Rp $nominal\n";
                 $text .= "💳 Metode: $metodeTeks\n";
                 $text .= "🗓️ Periode Tagihan: $periode\n";
-                $text .= "✅ Status: LUNAS\n\n";
+                $text .= "✅ Status: $statusTeks\n\n";
                 $text .= "📄 *Unduh Invoice (PDF):*\n";
                 $text .= "$linkDownload\n\n";
-                $text .= "Internet Anda sudah aktif kembali. Terima kasih atas kepercayaan Anda.";
 
-                $this->wa->send($customer->phone, $text);
+                if ($isFullPayment) {
+                    $text .= "Internet Anda sudah aktif kembali. Terima kasih atas kepercayaan Anda.";
+                } else {
+                    $displayPrice = $invoice->price > 0 ? $invoice->price : ($customer->monthly_price ?? 0);
+                    $sisaTagihan = max(0, $displayPrice - (float) $invoice->amount_paid);
+                    $text .= "Sisa tagihan yang harus dibayar: Rp " . number_format($sisaTagihan, 0, ',', '.') . ". Terima kasih.";
+                }
+
+                $waResult = $this->wa->send($customer->phone, $text, $customer->admin_id);
+                if (!$waResult['status']) {
+                    Log::warning("Gagal mengirim notifikasi WA pembayaran ke {$customer->phone}: " . ($waResult['message'] ?? 'Unknown error'));
+                }
+                return $waResult;
+            } else {
+                return ['status' => false, 'message' => 'Nomor HP pelanggan tidak terisi.'];
             }
         } catch (\Exception $e) {
-            // Log but don't fail
+            Log::error("Exception saat kirim WA pembayaran: " . $e->getMessage());
+            return ['status' => false, 'message' => 'Exception: ' . $e->getMessage()];
         }
     }
 
@@ -1250,8 +1272,8 @@ class BillingController extends Controller
                     $text .= "$linkDownload\n\n";
                     $text .= "Internet Anda sudah aktif kembali. Terima kasih atas kepercayaan Anda.";
 
-                    $waResult = $this->wa->send($customer->phone, $text);
-                    $pesanWA = $waResult['status'] ? "WA Terkirim." : "WA Gagal.";
+                    $waResult = $this->wa->send($customer->phone, $text, $customer->admin_id);
+                    $pesanWA = $waResult['status'] ? "WA Terkirim." : ("WA Gagal: " . ($waResult['message'] ?? 'Error'));
                 }
             } catch (\Exception $e) {
                 $pesanWA = "WA Error.";
@@ -1352,8 +1374,8 @@ class BillingController extends Controller
 
             $text .= "Internet Anda sudah aktif kembali. Terima kasih atas kepercayaan Anda.";
 
-            $waResult = $this->wa->send($customer->phone, $text);
-            $pesanWA = $waResult['status'] ? "WA Terkirim." : "WA Gagal.";
+            $waResult = $this->wa->send($customer->phone, $text, $customer->admin_id);
+            $pesanWA = $waResult['status'] ? "WA Terkirim." : ("WA Gagal: " . ($waResult['message'] ?? 'Error'));
         }
 
         return back()->with('success', "Pembayaran sukses! $pesanMikrotik $pesanWA");
@@ -1443,8 +1465,8 @@ class BillingController extends Controller
             $text .= "Koneksi internet untuk sementara dinonaktifkan.\n";
             $text .= "Silakan hubungi admin jika ini adalah kesalahan.";
 
-            $waResult = $this->wa->send($customer->phone, $text);
-            $pesanWA = $waResult['status'] ? "WA Terkirim." : "WA Gagal.";
+            $waResult = $this->wa->send($customer->phone, $text, $customer->admin_id);
+            $pesanWA = $waResult['status'] ? "WA Terkirim." : ("WA Gagal: " . ($waResult['message'] ?? 'Error'));
         }
 
         // Build pesan detail saldo

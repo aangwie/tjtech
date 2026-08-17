@@ -7,17 +7,31 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsappService
 {
-    public static function send($targetNumber, $message)
+    public static function send($targetNumber, $message, $adminId = null)
     {
-        // 1. Ambil Pengaturan dari Database
-        $setting = WhatsappSetting::first();
+        // 1. Ambil Pengaturan dari Database (Dukung spesifik tenant adminId)
+        $setting = null;
+        if ($adminId) {
+            $setting = WhatsappSetting::withoutGlobalScopes()->where('admin_id', $adminId)->first();
+        }
+        if (!$setting) {
+            $setting = WhatsappSetting::first();
+        }
+        if (!$setting) {
+            $setting = WhatsappSetting::withoutGlobalScopes()->first();
+        }
+
         if (!$setting) {
             return ['status' => false, 'message' => 'Pengaturan WhatsApp belum dikonfigurasi.'];
         }
 
         // 2. Format Nomor (Pastikan 628...)
         // Hapus karakter non-digit (seperti +, -, space)
-        $targetNumber = preg_replace('/[^0-9]/', '', $targetNumber);
+        $targetNumber = preg_replace('/[^0-9]/', '', (string)$targetNumber);
+
+        if (empty($targetNumber)) {
+            return ['status' => false, 'message' => 'Nomor HP tujuan kosong atau tidak valid.'];
+        }
 
         if (substr($targetNumber, 0, 1) == '0') {
             $targetNumber = '62' . substr($targetNumber, 1);
@@ -26,7 +40,8 @@ class WhatsappService
         // 3. Cek Provider: API atau Gateway
         if ($setting->wa_provider === 'gateway') {
             // KIRIM VIA SELF-HOSTED GATEWAY (BAILEYS)
-            $url = ($setting->wa_gateway_url ?? 'http://localhost:3000') . '/send';
+            $baseUrl = $setting->wa_gateway_url ?? 'http://localhost:3000';
+            $url = rtrim($baseUrl, '/') . '/send';
             $data = [
                 'number' => $targetNumber,
                 'message' => $message,
@@ -56,6 +71,10 @@ class WhatsappService
 
         // --- KIRIM VIA API EXTERNAL (Provider Lama) ---
         $url = $setting->target_url;
+        if (empty($url)) {
+            return ['status' => false, 'message' => 'Target URL API WhatsApp belum diisi pada pengaturan.'];
+        }
+
         $apiKey = $setting->api_key;
         $sender = $setting->sender_number;
 
